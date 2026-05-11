@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>随机匹配聊天</title>
+<style>
+  body{max-width:400px;margin:20px auto;font-family:Arial}
+  #chat{height:300px;border:1px solid #ccc;padding:10px;overflow:auto;margin-bottom:10px}
+  .msg{margin:5px 0;padding:8px;border-radius:10px}
+  .me{background:#007bff;color:white;margin-left:20%}
+  .other{background:#eee;margin-right:20%}
+  button{padding:10px;width:100%;font-size:16px}
+  #payBtn{background:red;color:white;display:none}
+</style>
+</head>
+<body>
+<h2>随机陌生人聊天</h2>
+<div id="status">未连接</div>
+<div id="chat"></div>
+<input id="text" maxlength="30" placeholder="输入消息（最多30字）"><br>
+<button id="send" disabled>发送</button>
+<button id="match">开始匹配</button>
+<button id="payBtn">付费解锁无限匹配</button>
+
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+  // ========== 这里后面换成你的 Render 地址 ==========
+  const socketUrl = "wss://你的项目名.onrender.com"; 
+  const socket = io(socketUrl);
+
+  let roomId = '';
+  const status = document.getElementById('status');
+  const chat = document.getElementById('chat');
+  const text = document.getElementById('text');
+  const sendBtn = document.getElementById('send');
+  const matchBtn = document.getElementById('match');
+  const payBtn = document.getElementById('payBtn');
+
+  socket.on('connect', () => status.innerText = '已在线');
+
+  // 等待匹配
+  socket.on('waiting', () => {
+    status.innerText = '正在匹配...';
+    matchBtn.disabled = true;
+  });
+
+  // 匹配成功
+  socket.on('matched', (data) => {
+    roomId = data.roomId;
+    status.innerText = '匹配成功！';
+    sendBtn.disabled = false;
+    matchBtn.disabled = false;
+  });
+
+  // 收到消息
+  socket.on('newMsg', (msg) => {
+    chat.innerHTML += `<div class="msg other">${msg}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  });
+
+  // 发送消息
+  sendBtn.onclick = () => {
+    const val = text.value.trim();
+    if (!val) return;
+    socket.emit('sendMsg', roomId, val);
+    chat.innerHTML += `<div class="msg me">${val}</div>`;
+    text.value = '';
+    chat.scrollTop = chat.scrollHeight;
+  };
+
+  // 聊天结束
+  socket.on('chatEnd', () => {
+    status.innerText = '对话结束（已达20条）';
+    sendBtn.disabled = true;
+    roomId = '';
+  });
+
+  // 错误提示（次数用完）
+  socket.on('error', (err) => {
+    alert(err);
+    if (err.includes('付费')) payBtn.style.display = 'block';
+  });
+
+  // 付费解锁成功
+  socket.on('unlocked', () => {
+    alert('支付成功！已解锁今日无限匹配');
+    payBtn.style.display = 'none';
+  });
+
+  // 开始匹配
+  matchBtn.onclick = () => socket.emit('startMatch');
+
+  // 付费按钮（跳转到易支付订单页，带上当前socket.id作为userId）
+  payBtn.onclick = () => {
+    // 这里替换成你的易支付订单链接，把 userId 换成 socket.id
+    const payUrl = `https://你的易支付地址/pay?userId=${socket.id}&amount=9.9`;
+    window.location.href = payUrl;
+  };
+</script>
+</body>
+</html>
