@@ -3,6 +3,10 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+app.use(express.static('.'));
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
