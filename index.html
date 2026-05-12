@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随机聊天</title>
+    <title>随机陌生人聊天</title>
     <style>
         * {
             box-sizing: border-box;
@@ -12,7 +12,7 @@
         }
         body {
             font-family: "Microsoft YaHei", sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background: #ebebeb;
@@ -20,30 +20,21 @@
         h1 {
             text-align: center;
             margin-bottom: 10px;
-            font-size: 22px;
+            font-size: 24px;
         }
         #status {
             text-align: center;
-            margin-bottom: 10px;
-            color: #666;
+            margin-bottom: 15px;
+            color: #28a745;
         }
-        #matchStatus {
-            margin: 15px 0;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 15px;
-            text-align: center;
-            display: none;
-        }
-
         #chat {
             height: 450px;
             border: 1px solid #ddd;
             padding: 15px;
             overflow-y: auto;
             background: #fff;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
         }
 
         .message {
@@ -65,14 +56,13 @@
             line-height: 1.4;
         }
         .mine .bubble {
-            background: #00C260;
+            background: #007bff;
             color: white;
             border-bottom-right-radius: 4px;
         }
         .other .bubble {
-            background: white;
+            background: #f1f1f1;
             color: #333;
-            border: 1px solid #ddd;
             border-bottom-left-radius: 4px;
         }
 
@@ -88,7 +78,8 @@
 
         .input-area {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         #message {
             flex: 1;
@@ -96,24 +87,66 @@
             border-radius: 20px;
             border: 1px solid #ddd;
             outline: none;
+            font-size: 15px;
         }
-        button {
-            padding: 12px 16px;
+        #send {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 20px;
+            background: #ccc;
+            color: white;
+            cursor: not-allowed;
+        }
+        #send.enabled {
+            background: #007bff;
+            cursor: pointer;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .btn-group button {
+            padding: 12px 24px;
             border: none;
             border-radius: 20px;
             background: #007bff;
             color: white;
+            font-size: 15px;
             cursor: pointer;
         }
-        button:disabled {
-            background: #ccc;
+        #leaveBtn {
+            background: #dc3545;
+            display: none;
         }
-        .btn-group {
-            margin-top: 10px;
+
+        /* 匹配状态提示 */
+        #matchStatus {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 15px;
             text-align: center;
+            display: none;
         }
-        .btn-group button + button {
-            margin-left: 8px;
+
+        /* 离开对话提示（1秒渐变消失） */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
         }
 
         /* 付费弹窗 */
@@ -160,20 +193,23 @@
 <body>
 
     <h1>随机陌生人聊天</h1>
+    <div id="status">✅ 待匹配</div>
     <div id="matchStatus"></div>
-    <div id="status">✅ 已在线</div>
     <div id="chat"></div>
 
     <div class="input-area">
         <input type="text" id="message" placeholder="输入消息...">
-        <button id="send" disabled>发送</button>
+        <button id="send">发送</button>
     </div>
 
     <div class="btn-group">
         <button id="matchBtn">开始匹配（今日剩余3次）</button>
-        <button id="leaveBtn" style="background:#f44336;display:none">离开对话</button>
+        <button id="leaveBtn">离开对话</button>
         <button id="payBtn">付费解锁</button>
     </div>
+
+    <!-- 离开对话提示 -->
+    <div id="toast" class="toast"></div>
 
     <!-- 付费套餐弹窗 -->
     <div id="payModal" class="modal">
@@ -199,14 +235,38 @@
 
         let myMsgCount = 0;
         let otherMsgCount = 0;
-        let isOtherOnline = false;
         let isMatching = false;
 
         const matchBtn = document.getElementById('matchBtn');
         const leaveBtn = document.getElementById('leaveBtn');
+        const sendBtn = document.getElementById('send');
+        const toast = document.getElementById('toast');
         const payModal = document.getElementById('payModal');
 
-        // 剩余次数
+        // 重置到原始待匹配界面
+        function resetToInitialState() {
+            myMsgCount = 0;
+            otherMsgCount = 0;
+            document.getElementById('chat').innerHTML = '';
+            document.getElementById('message').value = '';
+            sendBtn.classList.remove('enabled');
+            sendBtn.disabled = true;
+            leaveBtn.style.display = 'none';
+            document.getElementById('matchStatus').style.display = 'none';
+            document.getElementById('status').innerText = "✅ 待匹配";
+            document.getElementById('status').style.color = "#28a745";
+        }
+
+        // 显示1秒消失的提示
+        function showToast(text) {
+            toast.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1000);
+        }
+
+        // 剩余次数更新
         socket.on('left_count', (n) => {
             matchBtn.innerText = `开始匹配（今日剩余${n}次）`;
         });
@@ -231,17 +291,18 @@
             st.style.background = '#d4edda';
             st.style.color = '#155724';
             st.innerText = '✅ 匹配成功！开始聊天';
-            document.getElementById('send').disabled = false;
+            sendBtn.classList.add('enabled');
+            sendBtn.disabled = false;
             leaveBtn.style.display = 'inline-block';
-            isOtherOnline = true;
-            updateStatus();
+            document.getElementById('status').innerText = "✅ 对方在线";
+            document.getElementById('status').style.color = "#28a745";
         });
 
         // 匹配取消
         socket.on('match_canceled', () => {
             isMatching = false;
             matchBtn.innerText = "开始匹配";
-            document.getElementById('matchStatus').style.display = 'none';
+            resetToInitialState();
         });
 
         // 匹配错误
@@ -255,43 +316,17 @@
             st.innerText = '❌ ' + msg;
         });
 
-        // 聊天结束
+        // 聊天结束（对方离开）
         socket.on('chat_end', (msg) => {
-            let st = document.getElementById('matchStatus');
-            st.style.display = 'block';
-            st.style.background = '#f8d7da';
-            st.style.color = '#721c24';
-            st.innerText = '❌ ' + msg;
-            document.getElementById('send').disabled = true;
-            leaveBtn.style.display = 'none';
-            // 重置离线提示
-            isOtherOnline = false;
-            resetStatusToOnline();
+            showToast(msg);
+            setTimeout(resetToInitialState, 1000);
         });
 
         // 对方离线
         socket.on('user_leave', () => {
-            isOtherOnline = false;
-            updateStatus();
+            showToast("对方已离开对话");
+            setTimeout(resetToInitialState, 1000);
         });
-
-        function updateStatus() {
-            let dom = document.getElementById('status');
-            if (isOtherOnline) {
-                dom.innerText = "✅ 对方在线";
-                dom.style.color = "#00C260";
-            } else {
-                dom.innerText = "⚠️ 对方已离线";
-                dom.style.color = "#f44336";
-            }
-        }
-
-        // 结束对话后重置为「已在线」
-        function resetStatusToOnline() {
-            let dom = document.getElementById('status');
-            dom.innerText = "✅ 已在线";
-            dom.style.color = "#666";
-        }
 
         // 收到消息
         socket.on('new_message', (data) => {
@@ -322,35 +357,30 @@
             chat.scrollTop = chat.scrollHeight;
         });
 
-        // 发送
-        document.getElementById('send').onclick = function () {
+        // 发送消息
+        sendBtn.onclick = function () {
             let msg = document.getElementById('message').value.trim();
-            if (msg) {
+            if (msg && sendBtn.classList.contains('enabled')) {
                 socket.emit('send_message', msg);
                 document.getElementById('message').value = '';
             }
         };
 
-        // 匹配/取消
+        // 匹配/取消匹配按钮
         matchBtn.onclick = function () {
             if (!isMatching) {
-                myMsgCount = 0;
-                otherMsgCount = 0;
-                document.getElementById('chat').innerHTML = '';
+                resetToInitialState();
                 socket.emit('start_match');
             } else {
                 socket.emit('cancel_match');
             }
         };
 
-        // 离开对话
+        // 主动离开对话
         leaveBtn.onclick = function () {
             socket.emit('leave_chat');
-            document.getElementById('matchStatus').innerText = '❌ 你已离开对话';
-            document.getElementById('send').disabled = true;
-            leaveBtn.style.display = 'none';
-            isOtherOnline = false;
-            resetStatusToOnline();
+            showToast("你已离开对话");
+            setTimeout(resetToInitialState, 1000);
         };
 
         // 付费弹窗
@@ -360,7 +390,6 @@
         document.querySelector('.close-modal').onclick = function () {
             payModal.style.display = 'none';
         };
-        // 点击套餐（目前只alert，以后接支付）
         document.querySelectorAll('.package').forEach(pkg => {
             pkg.onclick = function () {
                 let price = this.getAttribute('data-price');
