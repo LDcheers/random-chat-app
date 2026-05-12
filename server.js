@@ -9,15 +9,12 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// 固定让网页能访问，绝对不会报错
 app.use(express.static(path.join(__dirname, '.')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-
 app.use(express.json());
 
-// 下面是你原来的聊天逻辑，我完整保留了
 let waitingUser = null;
 let userChats = {};
 let userMessageCounts = {};
@@ -26,6 +23,7 @@ let userDailyMatches = {};
 io.on('connection', (socket) => {
   console.log('用户连接:', socket.id);
 
+  // 开始匹配
   socket.on('start_match', () => {
     const userId = socket.id;
     const today = new Date().toDateString();
@@ -48,14 +46,22 @@ io.on('connection', (socket) => {
       socket.join(chatId);
       io.sockets.sockets.get(waitingUser).join(chatId);
 
-      io.to(chatId).emit('match_success', '匹配成功！开始聊天吧~');
+      io.to(chatId).emit('match_success', '匹配成功');
       waitingUser = null;
-
       userDailyMatches[userId][today] = todayMatches + 1;
     } else {
       waitingUser = socket.id;
-      socket.emit('waiting', '正在寻找匹配...');
+      socket.emit('waiting');
     }
+  });
+
+  // 新增：取消/暂停匹配
+  socket.on('cancel_match', () => {
+    // 如果当前自己在等待队列，清空
+    if (waitingUser === socket.id) {
+      waitingUser = null;
+    }
+    socket.emit('match_canceled');
   });
 
   socket.on('send_message', (msg) => {
@@ -82,6 +88,10 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (waitingUser === socket.id) waitingUser = null;
+    const chatId = userChats[socket.id];
+    if (chatId) {
+      io.to(chatId).emit('user_leave');
+    }
     delete userChats[socket.id];
     delete userMessageCounts[socket.id];
   });
