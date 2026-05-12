@@ -36,7 +36,6 @@
             display: none;
         }
 
-        /* 聊天框样式 */
         #chat {
             height: 450px;
             border: 1px solid #ddd;
@@ -47,7 +46,6 @@
             margin-bottom: 10px;
         }
 
-        /* 气泡样式 */
         .message {
             margin-bottom: 12px;
             display: flex;
@@ -62,7 +60,6 @@
             max-width: 70%;
             padding: 10px 14px;
             border-radius: 18px;
-            position: relative;
             word-wrap: break-word;
             font-size: 15px;
             line-height: 1.4;
@@ -79,7 +76,6 @@
             border-bottom-left-radius: 4px;
         }
 
-        /* 计数 */
         .msgCount {
             font-size: 12px;
             color: #999;
@@ -90,7 +86,6 @@
             text-align: left;
         }
 
-        /* 输入框 */
         .input-area {
             display: flex;
             gap: 8px;
@@ -112,7 +107,6 @@
         }
         button:disabled {
             background: #ccc;
-            cursor: not-allowed;
         }
         .btn-group {
             margin-top: 10px;
@@ -123,10 +117,8 @@
 <body>
 
     <h1>随机陌生人聊天</h1>
-
     <div id="matchStatus"></div>
     <div id="status">已在线</div>
-
     <div id="chat"></div>
 
     <div class="input-area">
@@ -135,7 +127,7 @@
     </div>
 
     <div class="btn-group">
-        <button id="match">开始匹配</button>
+        <button id="matchBtn">开始匹配</button>
         <button id="payBtn">付费解锁</button>
     </div>
 
@@ -144,82 +136,89 @@
         const socketUrl = "wss://random-chat-app-production-a19a.up.railway.app";
         const socket = io(socketUrl);
 
-        // 消息计数
         let myMsgCount = 0;
         let otherMsgCount = 0;
-
-        // 在线状态
         let isOtherOnline = false;
+        let isMatching = false;
 
-        // ==============================================
-        // 匹配状态
-        // ==============================================
+        const matchBtn = document.getElementById('matchBtn');
+
+        // 正在匹配
         socket.on('waiting', () => {
-            let s = document.getElementById('matchStatus');
-            s.style.display = 'block';
-            s.style.background = '#fff3cd';
-            s.style.color = '#856404';
-            s.innerText = '⏳ 正在匹配中...';
+            isMatching = true;
+            matchBtn.innerText = "取消匹配";
+            let st = document.getElementById('matchStatus');
+            st.style.display = 'block';
+            st.style.background = '#fff3cd';
+            st.style.color = '#856404';
+            st.innerText = '⏳ 正在匹配中，可以随时取消';
         });
 
+        // 匹配成功
         socket.on('match_success', () => {
-            let s = document.getElementById('matchStatus');
-            s.style.display = 'block';
-            s.style.background = '#d4edda';
-            s.style.color = '#155724';
-            s.innerText = '✅ 匹配成功！开始聊天';
+            isMatching = false;
+            matchBtn.innerText = "开始匹配";
+            let st = document.getElementById('matchStatus');
+            st.style.display = 'block';
+            st.style.background = '#d4edda';
+            st.style.color = '#155724';
+            st.innerText = '✅ 匹配成功！开始聊天';
             document.getElementById('send').disabled = false;
             isOtherOnline = true;
-            updateOnlineStatus();
+            updateStatus();
         });
 
+        // 匹配取消
+        socket.on('match_canceled', () => {
+            isMatching = false;
+            matchBtn.innerText = "开始匹配";
+            let st = document.getElementById('matchStatus');
+            st.style.display = 'none';
+        });
+
+        // 匹配错误
         socket.on('match_error', (msg) => {
-            let s = document.getElementById('matchStatus');
-            s.style.display = 'block';
-            s.style.background = '#f8d7da';
-            s.style.color: '#721c24';
-            s.innerText = '❌ ' + msg;
+            isMatching = false;
+            matchBtn.innerText = "开始匹配";
+            let st = document.getElementById('matchStatus');
+            st.style.display = 'block';
+            st.style.background = '#f8d7da';
+            st.style.color = '#721c24';
+            st.innerText = '❌ ' + msg;
         });
 
+        // 聊天结束
         socket.on('chat_end', (msg) => {
-            let s = document.getElementById('matchStatus');
-            s.style.display = 'block';
-            s.style.background: '#f8d7da';
-            s.style.color: '#721c24';
-            s.innerText = '❌ ' + msg;
+            let st = document.getElementById('matchStatus');
+            st.style.display = 'block';
+            st.style.background = '#f8d7da';
+            st.style.color = '#721c24';
+            st.innerText = '❌ ' + msg;
             document.getElementById('send').disabled = true;
         });
 
-        // ==============================================
-        // 对方在线状态
-        // ==============================================
+        // 对方离线
         socket.on('user_leave', () => {
             isOtherOnline = false;
-            updateOnlineStatus();
+            updateStatus();
         });
 
-        socket.on('user_rejoin', () => {
-            isOtherOnline = true;
-            updateOnlineStatus();
-        });
-
-        function updateOnlineStatus() {
-            const status = document.getElementById('status');
+        // 更新在线状态
+        function updateStatus() {
+            let dom = document.getElementById('status');
             if (isOtherOnline) {
-                status.innerText = "✅ 对方在线";
-                status.style.color = "#00C260";
+                dom.innerText = "✅ 对方在线";
+                dom.style.color = "#00C260";
             } else {
-                status.innerText = "⚠️ 对方已离线";
-                status.style.color: "#ff4444";
+                dom.innerText = "⚠️ 对方已离线";
+                dom.style.color = "#f44336";
             }
         }
 
-        // ==============================================
-        // 接收消息（左右气泡 + 计数）
-        // ==============================================
+        // 收到消息
         socket.on('new_message', (data) => {
-            const chat = document.getElementById('chat');
-            const isMe = data.user === socket.id;
+            let chat = document.getElementById('chat');
+            let isMe = data.user === socket.id;
 
             let msgDiv = document.createElement('div');
             msgDiv.className = 'message ' + (isMe ? 'mine' : 'other');
@@ -245,21 +244,27 @@
             chat.scrollTop = chat.scrollHeight;
         });
 
-        // ==============================================
-        // 发送消息
-        // ==============================================
+        // 发送
         document.getElementById('send').onclick = function () {
-            const msg = document.getElementById('message').value.trim();
-            if (!msg) return;
-            socket.emit('send_message', msg);
-            document.getElementById('message').value = '';
+            let msg = document.getElementById('message').value.trim();
+            if (msg) {
+                socket.emit('send_message', msg);
+                document.getElementById('message').value = '';
+            }
         };
 
-        document.getElementById('match').onclick = function () {
-            myMsgCount = 0;
-            otherMsgCount = 0;
-            document.getElementById('chat').innerHTML = '';
-            socket.emit('start_match');
+        // 匹配/取消匹配 按钮点击
+        matchBtn.onclick = function () {
+            if (!isMatching) {
+                // 开始匹配
+                myMsgCount = 0;
+                otherMsgCount = 0;
+                document.getElementById('chat').innerHTML = '';
+                socket.emit('start_match');
+            } else {
+                // 取消匹配
+                socket.emit('cancel_match');
+            }
         };
     </script>
 </body>
