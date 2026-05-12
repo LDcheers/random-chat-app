@@ -30,9 +30,10 @@ io.on('connection', (socket) => {
 
     if (!userDailyMatches[userId]) userDailyMatches[userId] = {};
     const todayMatches = userDailyMatches[userId][today] || 0;
+    const left = 3 - todayMatches;
 
     if (todayMatches >= 3) {
-      socket.emit('match_error', '今日免费匹配次数已用完，支付9.9元解锁无限匹配！');
+      socket.emit('match_error', '今日免费匹配次数已用完，支付解锁无限匹配！');
       return;
     }
 
@@ -46,24 +47,34 @@ io.on('connection', (socket) => {
       socket.join(chatId);
       io.sockets.sockets.get(waitingUser).join(chatId);
 
-      io.to(chatId).emit('match_success', '匹配成功');
+      io.to(chatId).emit('match_success');
       waitingUser = null;
       userDailyMatches[userId][today] = todayMatches + 1;
+      // 告诉前端剩余次数
+      socket.emit('left_count', left - 1);
     } else {
       waitingUser = socket.id;
       socket.emit('waiting');
+      socket.emit('left_count', left);
     }
   });
 
-  // 新增：取消/暂停匹配
+  // 取消匹配
   socket.on('cancel_match', () => {
-    // 如果当前自己在等待队列，清空
-    if (waitingUser === socket.id) {
-      waitingUser = null;
-    }
+    if (waitingUser === socket.id) waitingUser = null;
     socket.emit('match_canceled');
   });
 
+  // 主动离开对话
+  socket.on('leave_chat', () => {
+    const chatId = userChats[socket.id];
+    if (!chatId) return;
+    io.to(chatId).emit('chat_end', '对方已离开对话');
+    // 清空聊天关系
+    delete userChats[socket.id];
+  });
+
+  // 发消息
   socket.on('send_message', (msg) => {
     const chatId = userChats[socket.id];
     if (!chatId) return;
@@ -75,7 +86,7 @@ io.on('connection', (socket) => {
 
     userMessageCounts[socket.id]++;
     if (userMessageCounts[socket.id] > 20) {
-      socket.emit('message_error', '已达到最大消息次数，对话结束！');
+      socket.emit('message_error', '已达最大消息次数，对话结束！');
       io.to(chatId).emit('chat_end', '对话已结束');
       return;
     }
@@ -86,6 +97,7 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 离线
   socket.on('disconnect', () => {
     if (waitingUser === socket.id) waitingUser = null;
     const chatId = userChats[socket.id];
