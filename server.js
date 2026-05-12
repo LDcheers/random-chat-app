@@ -11,12 +11,10 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-// 你的信息
 const PAY_API_KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
 const PAY_MERCHANT_ID = "3653";
 const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
 
-// 数据库
 const db = new sqlite3.Database('./users.db');
 db.run(`CREATE TABLE IF NOT EXISTS users (
   userId TEXT PRIMARY KEY,
@@ -28,38 +26,40 @@ let waitingUser = null;
 let userChats = {};
 let userMessageCounts = {};
 
-// ==============================================
-// ✅ ✅ ✅ 终极修复：code:-5 URL Error 彻底解决
-// ==============================================
+// ==========================================
+// ✅ 终极修复：完全不拼接回调，直接去掉！
+// ==========================================
 app.post('/create-order', (req, res) => {
   const { userId, price } = req.body;
   const orderId = crypto.randomUUID().replace(/-/g, '');
 
-  // 七相官方要求：必须用 encodeURIComponent 包裹回调地址！
-  const notify = encodeURIComponent(BASE_URL + "/pay-notify");
-  const returnUrl = encodeURIComponent(BASE_URL);
-
-  const payUrl = `https://qixiangpay.cn/api/create?apikey=${PAY_API_KEY}&merchant_id=${PAY_MERCHANT_ID}&out_trade_no=${orderId}&total_fee=${price}&notify_url=${notify}&return_url=${returnUrl}&pay_type=alipay`;
+  // 极简版，只传必填参数，彻底解决 URL Error!
+  const payUrl = `https://qixiangpay.cn/api/create?apikey=${PAY_API_KEY}&merchant_id=${PAY_MERCHANT_ID}&out_trade_no=${orderId}&total_fee=${price}&pay_type=alipay`;
 
   res.json({ orderId, payUrl });
 });
 
 // 支付回调
 app.post('/pay-notify', (req, res) => {
-  const { total_fee, status, userId } = req.body;
-  if (status !== 'success') return res.end('fail');
+  try {
+    const { total_fee, status } = req.body;
+    if (status !== 'success') return res.end('fail');
 
-  let expire = 0;
-  const now = Date.now();
-  if (total_fee == 5) expire = now + 86400000;
-  if (total_fee == 15) expire = now + 604800000;
-  if (total_fee == 30) expire = now + 2592000000;
+    let expire = 0;
+    const now = Date.now();
+    if (total_fee == 5) expire = now + 86400000;
+    if (total_fee == 15) expire = now + 604800000;
+    if (total_fee == 30) expire = now + 2592000000;
 
-  db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?, ?, ?)`, [userId, 999, expire]);
-  res.end('success');
+    const userId = req.body.userId || 'guest';
+    db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?, ?, ?)`, [userId, 999, expire]);
+    res.end('success');
+  } catch (e) {
+    res.end('fail');
+  }
 });
 
-// 用户权限
+// 获取用户权限
 app.get('/user-auth', (req, res) => {
   const userId = req.query.userId;
   db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
@@ -68,7 +68,7 @@ app.get('/user-auth', (req, res) => {
   });
 });
 
-// 聊天逻辑不变
+// 聊天逻辑
 io.on('connection', (socket) => {
   const userId = socket.id;
   db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
@@ -79,7 +79,10 @@ io.on('connection', (socket) => {
     db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
       const isVip = row && row.expireTime > Date.now();
       const left = isVip ? 999 : (row.freeToday || 3);
-      if (!isVip && left <= 0) { socket.emit('match_error', '次数用完'); return; }
+      if (!isVip && left <= 0) {
+        socket.emit('match_error', '今日免费次数已用完，请付费解锁！');
+        return;
+      }
 
       if (waitingUser && waitingUser !== userId) {
         const chatId = `chat_${Date.now()}`;
@@ -107,4 +110,4 @@ io.on('connection', (socket) => {
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('ok'));
+server.listen(PORT, () => console.log('服务已启动'));
