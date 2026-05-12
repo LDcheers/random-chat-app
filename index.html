@@ -36,7 +36,33 @@
   // ========== 这里后面换成你的 Render 地址 ==========
   const socketUrl = "wss://random-chat-app-production-a19a.up.railway.app"; 
   const socket = io(socketUrl);
+// 正在匹配中
+socket.on('waiting', (msg) => {
+  let s = document.getElementById('matchStatus');
+  s.style.display = 'block';
+  s.style.background = '#fff3cd';
+  s.style.color = '#856404';
+  s.innerText = '⏳ 正在匹配中，请稍候...';
+});
 
+// 匹配成功
+socket.on('match_success', (msg) => {
+  let s = document.getElementById('matchStatus');
+  s.style.display = 'block';
+  s.style.background = '#d4edda';
+  s.style.color = '#155724';
+  s.innerText = '✅ 匹配成功！可以发消息了';
+});
+
+// 匹配失败/次数用完
+socket.on('match_error', (msg) => {
+  let s = document.getElementById('matchStatus');
+  s.style.display = 'block';
+  s.style.background = '#f8d7da';
+  s.style.color = '#721c24';
+  s.innerText = '❌ ' + msg;
+});
+  
   let roomId = '';
   const status = document.getElementById('status');
   const chat = document.getElementById('chat');
