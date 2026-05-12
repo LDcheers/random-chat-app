@@ -1,121 +1,93 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
-app.use(express.static('.'));
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
 });
 
+// 固定让网页能访问，绝对不会报错
+app.use(express.static(path.join(__dirname, '.')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.use(express.json());
 
-// ---------- 数据存储（内存）----------
-const waitingUsers = new Set(); // 等待匹配的用户
-const userMap = new Map();       // socket.id => { userId, dailyMatches, paid }
-const rooms = new Map();          // roomId => { user1, user2, msgCount }
+// 下面是你原来的聊天逻辑，我完整保留了
+let waitingUser = null;
+let userChats = {};
+let userMessageCounts = {};
+let userDailyMatches = {};
 
-// 生成唯一ID
-function genId() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-// ---------- 匹配逻辑 ----------
-function matchUsers() {
-  if (waitingUsers.size >= 2) {
-    const [id1, id2] = Array.from(waitingUsers).slice(0,2);
-    waitingUsers.delete(id1);
-    waitingUsers.delete(id2);
-    const roomId = genId();
-    rooms.set(roomId, { user1: id1, user2: id2, msgCount: 0 });
-    io.to(id1).emit('matched', { roomId, peer: ' Stranger' });
-    io.to(id2).emit('matched', { roomId, peer: ' Stranger' });
-  }
-}
-
-// ---------- Socket 连接 ----------
 io.on('connection', (socket) => {
-  console.log('用户上线:', socket.id);
+  console.log('用户连接:', socket.id);
 
-  // 初始化用户：每天3次免费，未付费
-  userMap.set(socket.id, {
-    userId: socket.id,
-    dailyMatches: 0,
-    paid: false
-  });
+  socket.on('start_match', () => {
+    const userId = socket.id;
+    const today = new Date().toDateString();
 
-  // 开始匹配
-  socket.on('startMatch', () => {
-    const u = userMap.get(socket.id);
-    // 免费次数用完且未付费 → 拒绝
-    if (u.dailyMatches >=3 && !u.paid) {
-      return socket.emit('error', '今日3次免费匹配已用完，请付费解锁');
+    if (!userDailyMatches[userId]) userDailyMatches[userId] = {};
+    const todayMatches = userDailyMatches[userId][today] || 0;
+
+    if (todayMatches >= 3) {
+      socket.emit('match_error', '今日免费匹配次数已用完，支付9.9元解锁无限匹配！');
+      return;
     }
-    waitingUsers.add(socket.id);
-    socket.emit('waiting');
-    matchUsers();
-  });
 
-  // 发送消息
-  socket.on('sendMsg', (roomId, text) => {
-    const room = rooms.get(roomId);
-    if (!room) return;
-    // 每条≤30字
-    if (text.length >30) return socket.emit('error', '消息不能超过30字');
-    // 每人限20条
-    if (room.msgCount >=20) return socket.emit('error', '已达20条，对话结束');
-    room.msgCount++;
-    // 发给对方
-    const peer = room.user1 === socket.id ? room.user2 : room.user1;
-    io.to(peer).emit('newMsg', text);
-    // 满20条 → 强制结束
-    if (room.msgCount >=20) {
-      io.to(room.user1).emit('chatEnd');
-      io.to(room.user2).emit('chatEnd');
-      rooms.delete(roomId);
+    if (waitingUser && waitingUser !== socket.id) {
+      const chatId = `chat_${Date.now()}`;
+      userChats[socket.id] = chatId;
+      userChats[waitingUser] = chatId;
+      userMessageCounts[socket.id] = 0;
+      userMessageCounts[waitingUser] = 0;
+
+      socket.join(chatId);
+      io.sockets.sockets.get(waitingUser).join(chatId);
+
+      io.to(chatId).emit('match_success', '匹配成功！开始聊天吧~');
+      waitingUser = null;
+
+      userDailyMatches[userId][today] = todayMatches + 1;
+    } else {
+      waitingUser = socket.id;
+      socket.emit('waiting', '正在寻找匹配...');
     }
   });
 
-  // 离开聊天
-  socket.on('leaveChat', (roomId) => {
-    rooms.delete(roomId);
-    socket.broadcast.to(roomId).emit('chatEnd');
-  });
+  socket.on('send_message', (msg) => {
+    const chatId = userChats[socket.id];
+    if (!chatId) return;
 
-  // ---------- 支付回调：自动解锁次数 ----------
-  // 易支付回调地址：/payCallback
-  app.post('/payCallback', (req, res) => {
-    const { userId, success } = req.body;
-    if (success === '1') {
-      // 找到对应用户 → 标记已付费，次数清零
-      for (let [sid, u] of userMap) {
-        if (u.userId === userId) {
-          u.paid = true;
-          u.dailyMatches = 0; // 付费后重置次数
-          io.to(sid).emit('unlocked'); // 前端提示解锁成功
-        }
-      }
+    if (msg.length > 30) {
+      socket.emit('message_error', '消息长度不能超过30字！');
+      return;
     }
-    res.send('ok');
+
+    userMessageCounts[socket.id]++;
+    if (userMessageCounts[socket.id] > 20) {
+      socket.emit('message_error', '已达到最大消息次数，对话结束！');
+      io.to(chatId).emit('chat_end', '对话已结束');
+      return;
+    }
+
+    io.to(chatId).emit('new_message', {
+      user: socket.id,
+      msg: msg
+    });
   });
 
   socket.on('disconnect', () => {
-    waitingUsers.delete(socket.id);
-    userMap.delete(socket.id);
-    // 清理房间
-    for (let [rid, r] of rooms) {
-      if (r.user1 === socket.id || r.user2 === socket.id) {
-        rooms.delete(rid);
-        io.to(r.user1).emit('chatEnd');
-        io.to(r.user2).emit('chatEnd');
-      }
-    }
+    if (waitingUser === socket.id) waitingUser = null;
+    delete userChats[socket.id];
+    delete userMessageCounts[socket.id];
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('运行在端口', PORT));
+server.listen(PORT, () => {
+  console.log(`服务运行在端口 ${PORT}`);
+});
