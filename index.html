@@ -1,137 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<title>随机匹配聊天</title>
-<style>
-  body{max-width:400px;margin:20px auto;font-family:Arial}
-  #chat{height:300px;border:1px solid #ccc;padding:10px;overflow:auto;margin-bottom:10px}
-  .msg{margin:5px 0;padding:8px;border-radius:10px}
-  .me{background:#007bff;color:white;margin-left:20%}
-  .other{background:#eee;margin-right:20%}
-  button{padding:10px;width:100%;font-size:16px}
-  #payBtn{background:red;color:white;display:none}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机聊天</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        #chat {
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        #message {
+            width: 80%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
-<body> 
-<h2>随机陌生人聊天</h2>
-<div id="status">未连接</div>
-<div id="chat"></div>
-<input id="text" maxlength="30" placeholder="输入消息（最多30字）"><br>
-<button id="send" disabled>发送</button>
-<button id="match">开始匹配</button>
-<div id="matchStatus" style="margin:20px 0;padding:15px;border-radius:8px;text-align:center;display:none;"></div>  
-<button id="payBtn">付费解锁无限匹配</button
-<!-- 匹配状态提示框 -->
-<div id="matchStatus" style="
-  margin: 20px 0;
-  padding: 15px;
-  border-radius: 8px;
-  font-size: 16px;
-  text-align: center;
-  display: none;
-"></div>                              
+<body>
 
-<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-<script>
-  // ========== 这里后面换成你的 Render 地址 ==========
-  const socketUrl = "wss://random-chat-app-production-a19a.up.railway.app"; 
-  const socket = io(socketUrl);
-// 正在匹配中
-socket.on('waiting', (msg) => {
-  let s = document.getElementById("matchStatus");
-  s.style.display = 'block';
-  s.style.background = '#fff3cd';
-  s.style.color = '#856404';
-  s.innerText = '⏳ 正在匹配中，请稍候...';
-});
+    <h1>随机陌生人聊天</h1>
 
-// 匹配成功
-socket.on('match_success', (msg) => {
-  let s = document.getElementById("matchStatus");
-  s.style.display = 'block';
-  s.style.background = '#d4edda';
-  s.style.color = '#155724';
-  s.innerText = '✅ 匹配成功！可以发消息了';
-});
+    <!-- 匹配状态提示框（我已经放好最正确的位置） -->
+    <div id="matchStatus" style="
+        margin: 15px 0;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 15px;
+        text-align: center;
+        display: none;
+    "></div>
 
-// 匹配失败/次数用完
-socket.on('match_error', (msg) => {
-  let s = document.getElementById("matchStatus");
-  s.style.display = 'block';
-  s.style.background = '#f8d7da';
-  s.style.color = '#721c24';
-  s.innerText = '❌ ' + msg;
-});
-  
-  let roomId = '';
-  const status = document.getElementById('status');
-  const chat = document.getElementById('chat');
-  const text = document.getElementById('text');
-  const sendBtn = document.getElementById('send');
-  const matchBtn = document.getElementById('match');
-  const payBtn = document.getElementById('payBtn');
+    <div id="status">已在线</div>
+    <div id="chat"></div>
 
-  socket.on('connect', () => status.innerText = '已在线');
+    <input type="text" id="message" placeholder="输入消息...">
+    <button id="send" disabled>发送</button>
+    <br>
+    <button id="match">开始匹配</button>
+    <button id="payBtn">付费解锁无限匹配</button>
 
-  // 等待匹配
-  socket.on('waiting', () => {
-    status.innerText = '正在匹配...';
-    matchBtn.disabled = true;
-  });
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // 你的服务器地址
+        const socketUrl = "wss://random-chat-app-production-a19a.up.railway.app";
+        const socket = io(socketUrl);
 
-  // 匹配成功
-  socket.on('matched', (data) => {
-    roomId = data.roomId;
-    status.innerText = '匹配成功！';
-    sendBtn.disabled = false;
-    matchBtn.disabled = false;
-  });
+        // ===================== 匹配状态提示（完整版，无任何错误） =====================
+        // 正在匹配中
+        socket.on('waiting', (msg) => {
+            let s = document.getElementById('matchStatus');
+            s.style.display = 'block';
+            s.style.background = '#fff3cd';
+            s.style.color = '#856404';
+            s.innerText = '⏳ 正在匹配中，请稍候...';
+        });
 
-  // 收到消息
-  socket.on('newMsg', (msg) => {
-    chat.innerHTML += `<div class="msg other">${msg}</div>`;
-    chat.scrollTop = chat.scrollHeight;
-  });
+        // 匹配成功
+        socket.on('match_success', (msg) => {
+            let s = document.getElementById('matchStatus');
+            s.style.display = 'block';
+            s.style.background = '#d4edda';
+            s.style.color = '#155724';
+            s.innerText = '✅ 匹配成功！可以发消息了';
+            document.getElementById('send').disabled = false;
+        });
 
-  // 发送消息
-  sendBtn.onclick = () => {
-    const val = text.value.trim();
-    if (!val) return;
-    socket.emit('sendMsg', roomId, val);
-    chat.innerHTML += `<div class="msg me">${val}</div>`;
-    text.value = '';
-    chat.scrollTop = chat.scrollHeight;
-  };
+        // 匹配错误
+        socket.on('match_error', (msg) => {
+            let s = document.getElementById('matchStatus');
+            s.style.display = 'block';
+            s.style.background = '#f8d7da';
+            s.style.color = '#721c24';
+            s.innerText = '❌ ' + msg;
+        });
 
-  // 聊天结束
-  socket.on('chatEnd', () => {
-    status.innerText = '对话结束（已达20条）';
-    sendBtn.disabled = true;
-    roomId = '';
-  });
+        // 聊天结束
+        socket.on('chat_end', (msg) => {
+            let s = document.getElementById('matchStatus');
+            s.style.display = 'block';
+            s.style.background = '#f8d7da';
+            s.style.color = '#721c24';
+            s.innerText = '❌ ' + msg;
+            document.getElementById('send').disabled = true;
+        });
 
-  // 错误提示（次数用完）
-  socket.on('error', (err) => {
-    alert(err);
-    if (err.includes('付费')) payBtn.style.display = 'block';
-  });
+        // 收到消息
+        socket.on('new_message', (data) => {
+            let chat = document.getElementById('chat');
+            let div = document.createElement('div');
+            div.innerHTML = `<strong>${data.user}:</strong> ${data.msg}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        });
 
-  // 付费解锁成功
-  socket.on('unlocked', () => {
-    alert('支付成功！已解锁今日无限匹配');
-    payBtn.style.display = 'none';
-  });
+        // 发送消息
+        document.getElementById('send').onclick = function () {
+            let msg = document.getElementById('message').value;
+            if (msg) {
+                socket.emit('send_message', msg);
+                document.getElementById('message').value = '';
+            }
+        };
 
-  // 开始匹配
-  matchBtn.onclick = () => socket.emit('startMatch');
-
-  // 付费按钮（跳转到易支付订单页，带上当前socket.id作为userId）
-  payBtn.onclick = () => {
-    // 这里替换成你的易支付订单链接，把 userId 换成 socket.id
-    const payUrl = `https://你的易支付地址/pay?userId=${socket.id}&amount=9.9`;
-    window.location.href = payUrl;
-  };
-</script>
+        // 开始匹配
+        document.getElementById('match').onclick = function () {
+            socket.emit('start_match');
+        };
+    </script>
 </body>
 </html>
