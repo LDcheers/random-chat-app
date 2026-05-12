@@ -1,170 +1,130 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blind Touch</title>
-    <style>
-        * { box-sizing: border-box; margin:0; padding:0; }
-        body { font-family:"Microsoft YaHei"; max-width:800px; margin:0 auto; padding:20px; background:#1E1E2E; color:#fff; position: relative; }
-        h1 { text-align:center; margin-bottom:10px; font-size:28px; color:#fff; }
-        #status { text-align:center; margin-bottom:15px; color:#28a745; }
-        #chat { height:450px; border:1px solid #444; padding:15px; overflow-y:auto; background:#2D2D3F; border-radius:8px; margin-bottom:15px; }
-        .message { margin-bottom:12px; display:flex; }
-        .mine { justify-content:flex-end; }
-        .other { justify-content:flex-start; }
-        .bubble { max-width:70%; padding:10px 14px; border-radius:18px; word-wrap:break-word; font-size:15px; }
-        .mine .bubble { background:#007bff; color:white; }
-        .other .bubble { background:#444; color:#fff; }
-        .input-area { display:flex; gap:10px; margin-bottom:15px; }
-        #message { flex:1; padding:12px; border-radius:20px; border:1px solid #444; background:#2D2D3F; color:#fff; outline:none; }
-        #send { padding:12px 24px; border:none; border-radius:20px; background:#ccc; color:white; cursor:not-allowed; }
-        #send.enabled { background:#007bff; cursor:pointer; }
-        .btn-group { display:flex; justify-content:center; gap:15px; margin-bottom:10px; }
-        button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
-        #matchBtn { background:#007bff; color:#fff; }
-        #leaveBtn { background:#dc3545; color:#fff; display:none; }
-        #matchStatus { margin:10px 0; padding:12px; border-radius:6px; font-size:15px; text-align:center; display:none; }
-        .toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:12px 24px; border-radius:8px; opacity:0; transition:opacity 0.3s; z-index:1000; }
-        .toast.show { opacity:1; }
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
+const crypto = require('crypto');
 
-        /* 充值按钮 —— 永久常驻右侧 */
-        #payBtn {
-            position: fixed;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #ff5722;
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            padding: 12px 16px;
-            font-size: 14px;
-            display: block !important;
-            cursor: pointer;
-            z-index: 99;
-            box-shadow: 0 0 10px rgba(255,87,34,0.5);
-        }
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
-        .modal-content { background:#2D2D3F; padding:25px; border-radius:12px; max-width:400px; width:90%; position:relative; color:#fff; }
-        .close-modal { position:absolute; top:10px; right:15px; font-size:22px; cursor:pointer; color:#fff; }
-        .package { border:1px solid #555; border-radius:8px; padding:14px; margin:10px 0; cursor:pointer; background:#3D3D5F; text-align:center; }
-        .package:hover { background:#50507A; }
-    </style>
-</head>
-<body>
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '.')));
 
-<button id="payBtn">开通会员</button>
-<h1>Blind Touch</h1>
-<div id="status">✅ 待匹配</div>
-<div id="matchStatus"></div>
-<div id="chat"></div>
+// 你的配置
+const PID = "3653";
+const KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
+const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
+const API_URL = "https://api.payqixiang.cn/submit.php";
 
-<div class="input-area">
-    <input type="text" id="message" placeholder="输入消息...">
-    <button id="send">发送</button>
-</div>
+// 数据库
+const db = new sqlite3.Database('./users.db');
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  userId TEXT PRIMARY KEY,
+  freeToday INTEGER DEFAULT 3,
+  expireTime INTEGER DEFAULT 0
+)`);
 
-<div class="btn-group">
-    <button id="matchBtn">加载中...</button>
-    <button id="leaveBtn">离开对话</button>
-</div>
-<div id="toast" class="toast"></div>
+let waitingUser = null;
+let userChats = {};
 
-<!-- 支付弹窗 -->
-<div id="payModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2 style="text-align:center; margin-bottom:20px;">解锁无限聊天</h2>
-        <div class="package" data-price="5"><strong>5元</strong><br>当日无限</div>
-        <div class="package" data-price="15"><strong>15元</strong><br>7天无限</div>
-        <div class="package" data-price="30"><strong>30元</strong><br>30天无限</div>
-    </div>
-</div>
+// ==============================================
+// 官方支付接口（submit.php POST + 正确签名）
+// ==============================================
+app.post('/create-order', (req, res) => {
+  const { userId, price } = req.body;
+  const out_trade_no = crypto.randomUUID().replace(/-/g, '');
+  const money = parseFloat(price).toFixed(2);
+  const name = "会员";
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const userId = socket.id;
-let isMatching = false;
-let isVip = false;
+  const params = {
+    pid: PID,
+    type: 'alipay',
+    out_trade_no: out_trade_no,
+    money: money,
+    name: name,
+    notify_url: `${BASE_URL}/pay-notify`,
+    return_url: BASE_URL
+  };
 
-const matchBtn = document.getElementById('matchBtn');
-const leaveBtn = document.getElementById('leaveBtn');
-const sendBtn = document.getElementById('send');
-const payBtn = document.getElementById('payBtn');
-const payModal = document.getElementById('payModal');
+  // 正确签名
+  let signStr = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&') + `&key=${KEY}`;
+  const sign = crypto.createHash('md5').update(signStr, 'utf8').digest('hex');
 
-function reset() {
-    document.getElementById('chat').innerHTML = '';
-    sendBtn.classList.remove('enabled');
-    sendBtn.disabled = true;
-    leaveBtn.style.display = 'none';
-    document.getElementById('status').innerText = "✅ 待匹配";
-}
-
-async function loadUser() {
-    let res = await fetch('/user-auth?userId='+userId);
-    let d = await res.json();
-    isVip = d.isVip;
-    if (isVip) matchBtn.innerText = "开始匹配（无限）";
-    else matchBtn.innerText = `开始匹配（剩余${d.freeToday}次）`;
-}
-
-payBtn.onclick = () => payModal.style.display = 'flex';
-document.querySelector('.close-modal').onclick = () => payModal.style.display = 'none';
-
-// 支付 —— 100% 修复版
-document.querySelectorAll('.package').forEach(p => {
-    p.onclick = async () => {
-        let price = p.dataset.price;
-        let res = await fetch('/create-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, price })
-        });
-        let d = await res.json();
-        if (d.payUrl) location.href = d.payUrl;
-    }
+  res.json({
+    formUrl: API_URL,
+    formData: { ...params, sign, sign_type: 'MD5' }
+  });
 });
 
-matchBtn.onclick = () => {
-    if (!isMatching) { socket.emit('start_match'); isMatching = true; matchBtn.innerText = "取消匹配"; }
-    else { socket.emit('cancel_match'); isMatching = false; matchBtn.innerText = "开始匹配"; }
-};
+// 支付回调
+app.post('/pay-notify', (req, res) => {
+  const { trade_status, money, out_trade_no } = req.body;
+  if (trade_status !== 'TRADE_SUCCESS') return res.end('fail');
 
-leaveBtn.onclick = () => socket.emit('leave_chat');
-sendBtn.onclick = () => {
-    let msg = document.getElementById('message').value.trim();
-    if (msg) { socket.emit('send_message', msg); document.getElementById('message').value = ''; }
-};
+  const now = Date.now();
+  let expire = 0;
+  if (+money === 5) expire = now + 86400000;
+  if (+money === 15) expire = now + 604800000;
+  if (+money === 30) expire = now + 2592000000;
 
-socket.on('match_success', () => {
-    isMatching = false; matchBtn.innerText = "开始匹配";
-    sendBtn.classList.add('enabled'); sendBtn.disabled = false;
-    leaveBtn.style.display = "inline-block";
-    document.getElementById('status').innerText = "✅ 已连接";
+  db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?, 999, ?)`, [out_trade_no, expire]);
+  res.end('success');
 });
 
-socket.on('waiting', () => document.getElementById('status').innerText = "⏳ 匹配中...");
-socket.on('match_canceled', () => { isMatching = false; matchBtn.innerText = "开始匹配"; });
-socket.on('chat_end', () => reset());
-socket.on('user_leave', () => reset());
-socket.on('new_message', (d) => {
-    let div = document.createElement('div');
-    div.className = d.user === userId ? 'message mine' : 'message other';
-    let b = document.createElement('div');
-    b.className = 'bubble';
-    b.innerText = d.msg;
-    div.appendChild(b);
-    document.getElementById('chat').appendChild(div);
-    document.getElementById('chat').scrollTop = 99999;
+// 获取用户权限
+app.get('/user-auth', (req, res) => {
+  const userId = req.query.userId;
+  db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
+    if (!row) row = { freeToday: 3, expireTime: 0 };
+    res.json({
+      freeToday: row.freeToday,
+      isVip: row.expireTime > Date.now()
+    });
+  });
 });
-socket.on('left_count', n => { if (!isVip) matchBtn.innerText = `开始匹配（剩余${n}次）`; });
-socket.on('match_error', msg => alert(msg));
 
-loadUser();
-</script>
-</body>
-</html>
+// ==============================================
+// 聊天匹配逻辑（完全不变）
+// ==============================================
+io.on('connection', (socket) => {
+  const userId = socket.id;
+  db.run(`INSERT OR IGNORE INTO users (userId) VALUES (?)`, [userId]);
+
+  socket.on('start_match', () => {
+    db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
+      const isVip = row?.expireTime > Date.now();
+      const left = isVip ? 999 : (row?.freeToday || 0);
+
+      if (!isVip && left <= 0) {
+        socket.emit('match_error', '今日免费次数已用完，请开通会员');
+        return;
+      }
+
+      if (waitingUser && waitingUser !== userId) {
+        const chatId = `chat_${Date.now()}`;
+        userChats[userId] = chatId;
+        userChats[waitingUser] = chatId;
+        socket.join(chatId);
+        io.sockets.sockets.get(waitingUser)?.join(chatId);
+        io.to(chatId).emit('match_success');
+        waitingUser = null;
+        if (!isVip) db.run(`UPDATE users SET freeToday = freeToday - 1 WHERE userId = ?`, [userId]);
+        socket.emit('left_count', left - 1);
+      } else {
+        waitingUser = userId;
+        socket.emit('waiting');
+        socket.emit('left_count', left);
+      }
+    });
+  });
+
+  socket.on('cancel_match', () => { if (waitingUser === userId) waitingUser = null; });
+  socket.on('leave_chat', () => { const c = userChats[userId]; if (c) io.to(c).emit('chat_end'); delete userChats[userId]; });
+  socket.on('send_message', (msg) => { const c = userChats[userId]; if (c) io.to(c).emit('new_message', { user: userId, msg }); });
+  socket.on('disconnect', () => { if (waitingUser === userId) waitingUser = null; const c = userChats[userId]; if (c) io.to(c).emit('user_leave'); delete userChats[userId]; });
+});
+
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+server.listen(process.env.PORT || 3000, () => console.log('服务启动成功'));
