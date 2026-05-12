@@ -112,13 +112,56 @@
             margin-top: 10px;
             text-align: center;
         }
+        .btn-group button + button {
+            margin-left: 8px;
+        }
+
+        /* 付费弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+        .package {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .package:hover {
+            background: #f5f5f5;
+        }
     </style>
 </head>
 <body>
 
     <h1>随机陌生人聊天</h1>
     <div id="matchStatus"></div>
-    <div id="status">已在线</div>
+    <div id="status">✅ 已在线</div>
     <div id="chat"></div>
 
     <div class="input-area">
@@ -127,8 +170,26 @@
     </div>
 
     <div class="btn-group">
-        <button id="matchBtn">开始匹配</button>
+        <button id="matchBtn">开始匹配（今日剩余3次）</button>
+        <button id="leaveBtn" style="background:#f44336;display:none">离开对话</button>
         <button id="payBtn">付费解锁</button>
+    </div>
+
+    <!-- 付费套餐弹窗 -->
+    <div id="payModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 style="text-align:center;margin-bottom:15px">选择付费套餐</h2>
+            <div class="package" data-price="9.9">
+                <strong>9.9元</strong> - 当日无限匹配
+            </div>
+            <div class="package" data-price="29.9">
+                <strong>29.9元</strong> - 7天无限匹配
+            </div>
+            <div class="package" data-price="99">
+                <strong>99元</strong> - 永久无限匹配
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -142,6 +203,13 @@
         let isMatching = false;
 
         const matchBtn = document.getElementById('matchBtn');
+        const leaveBtn = document.getElementById('leaveBtn');
+        const payModal = document.getElementById('payModal');
+
+        // 剩余次数
+        socket.on('left_count', (n) => {
+            matchBtn.innerText = `开始匹配（今日剩余${n}次）`;
+        });
 
         // 正在匹配
         socket.on('waiting', () => {
@@ -164,6 +232,7 @@
             st.style.color = '#155724';
             st.innerText = '✅ 匹配成功！开始聊天';
             document.getElementById('send').disabled = false;
+            leaveBtn.style.display = 'inline-block';
             isOtherOnline = true;
             updateStatus();
         });
@@ -172,8 +241,7 @@
         socket.on('match_canceled', () => {
             isMatching = false;
             matchBtn.innerText = "开始匹配";
-            let st = document.getElementById('matchStatus');
-            st.style.display = 'none';
+            document.getElementById('matchStatus').style.display = 'none';
         });
 
         // 匹配错误
@@ -195,6 +263,10 @@
             st.style.color = '#721c24';
             st.innerText = '❌ ' + msg;
             document.getElementById('send').disabled = true;
+            leaveBtn.style.display = 'none';
+            // 重置离线提示
+            isOtherOnline = false;
+            resetStatusToOnline();
         });
 
         // 对方离线
@@ -203,7 +275,6 @@
             updateStatus();
         });
 
-        // 更新在线状态
         function updateStatus() {
             let dom = document.getElementById('status');
             if (isOtherOnline) {
@@ -213,6 +284,13 @@
                 dom.innerText = "⚠️ 对方已离线";
                 dom.style.color = "#f44336";
             }
+        }
+
+        // 结束对话后重置为「已在线」
+        function resetStatusToOnline() {
+            let dom = document.getElementById('status');
+            dom.innerText = "✅ 已在线";
+            dom.style.color = "#666";
         }
 
         // 收到消息
@@ -253,19 +331,43 @@
             }
         };
 
-        // 匹配/取消匹配 按钮点击
+        // 匹配/取消
         matchBtn.onclick = function () {
             if (!isMatching) {
-                // 开始匹配
                 myMsgCount = 0;
                 otherMsgCount = 0;
                 document.getElementById('chat').innerHTML = '';
                 socket.emit('start_match');
             } else {
-                // 取消匹配
                 socket.emit('cancel_match');
             }
         };
+
+        // 离开对话
+        leaveBtn.onclick = function () {
+            socket.emit('leave_chat');
+            document.getElementById('matchStatus').innerText = '❌ 你已离开对话';
+            document.getElementById('send').disabled = true;
+            leaveBtn.style.display = 'none';
+            isOtherOnline = false;
+            resetStatusToOnline();
+        };
+
+        // 付费弹窗
+        document.getElementById('payBtn').onclick = function () {
+            payModal.style.display = 'flex';
+        };
+        document.querySelector('.close-modal').onclick = function () {
+            payModal.style.display = 'none';
+        };
+        // 点击套餐（目前只alert，以后接支付）
+        document.querySelectorAll('.package').forEach(pkg => {
+            pkg.onclick = function () {
+                let price = this.getAttribute('data-price');
+                alert(`你选择了 ${price} 元套餐，后续对接支付即可`);
+                payModal.style.display = 'none';
+            };
+        });
     </script>
 </body>
 </html>
