@@ -39,7 +39,7 @@
   const socket = io(socketUrl);
 // 正在匹配中
 socket.on('waiting', (msg) => {
-  let s = document.getElementById('matchStatus');
+  let s = document.getElementById("matchStatus");
   s.style.display = 'block';
   s.style.background = '#fff3cd';
   s.style.color = '#856404';
@@ -48,7 +48,7 @@ socket.on('waiting', (msg) => {
 
 // 匹配成功
 socket.on('match_success', (msg) => {
-  let s = document.getElementById('matchStatus');
+  let s = document.getElementById("matchStatus");
   s.style.display = 'block';
   s.style.background = '#d4edda';
   s.style.color = '#155724';
@@ -57,7 +57,7 @@ socket.on('match_success', (msg) => {
 
 // 匹配失败/次数用完
 socket.on('match_error', (msg) => {
-  let s = document.getElementById('matchStatus');
+  let s = document.getElementById("matchStatus");
   s.style.display = 'block';
   s.style.background = '#f8d7da';
   s.style.color = '#721c24';
