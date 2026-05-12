@@ -6,29 +6,29 @@
     <title>Blind Touch</title>
     <style>
         * { box-sizing: border-box; margin:0; padding:0; }
-        body { font-family:"Microsoft YaHei"; max-width:800px; margin:0 auto; padding:20px; background:#ebebeb; position: relative; }
-        h1 { text-align:center; margin-bottom:10px; font-size:24px; }
+        body { font-family:"Microsoft YaHei"; max-width:800px; margin:0 auto; padding:20px; background:#1E1E2E; color:#fff; position: relative; }
+        h1 { text-align:center; margin-bottom:10px; font-size:28px; color:#fff; }
         #status { text-align:center; margin-bottom:15px; color:#28a745; }
-        #chat { height:450px; border:1px solid #ddd; padding:15px; overflow-y:auto; background:#fff; border-radius:8px; margin-bottom:15px; }
+        #chat { height:450px; border:1px solid #444; padding:15px; overflow-y:auto; background:#2D2D3F; border-radius:8px; margin-bottom:15px; }
         .message { margin-bottom:12px; display:flex; }
         .mine { justify-content:flex-end; }
         .other { justify-content:flex-start; }
         .bubble { max-width:70%; padding:10px 14px; border-radius:18px; word-wrap:break-word; font-size:15px; }
-        .mine .bubble { background:#007bff; color:white; border-bottom-right-radius:4px; }
-        .other .bubble { background:#f1f1f1; color:#333; border-bottom-left-radius:4px; }
-        .msgCount { font-size:12px; color:#999; margin-top:4px; text-align:right; }
-        .other .msgCount { text-align:left; }
+        .mine .bubble { background:#007bff; color:white; }
+        .other .bubble { background:#444; color:#fff; }
         .input-area { display:flex; gap:10px; margin-bottom:15px; }
-        #message { flex:1; padding:12px; border-radius:20px; border:1px solid #ddd; outline:none; }
+        #message { flex:1; padding:12px; border-radius:20px; border:1px solid #444; background:#2D2D3F; color:#fff; outline:none; }
         #send { padding:12px 24px; border:none; border-radius:20px; background:#ccc; color:white; cursor:not-allowed; }
         #send.enabled { background:#007bff; cursor:pointer; }
         .btn-group { display:flex; justify-content:center; gap:15px; margin-bottom:10px; }
-        #leaveBtn { background:#dc3545; display:none; }
+        button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
+        #matchBtn { background:#007bff; color:#fff; }
+        #leaveBtn { background:#dc3545; color:#fff; display:none; }
         #matchStatus { margin:10px 0; padding:12px; border-radius:6px; font-size:15px; text-align:center; display:none; }
         .toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:12px 24px; border-radius:8px; opacity:0; transition:opacity 0.3s; z-index:1000; }
         .toast.show { opacity:1; }
 
-        /* 右侧常驻充值按钮 —— 永远显示，不隐藏 */
+        /* 充值按钮 —— 永久常驻右侧 */
         #payBtn {
             position: fixed;
             right: 12px;
@@ -38,26 +38,24 @@
             color: #fff;
             border: none;
             border-radius: 30px;
-            padding: 10px 14px;
-            font-size: 12px;
-            display: block !important; /* 强制永远显示 */
+            padding: 12px 16px;
+            font-size: 14px;
+            display: block !important;
             cursor: pointer;
             z-index: 99;
+            box-shadow: 0 0 10px rgba(255,87,34,0.5);
         }
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center; }
-        .modal-content { background:#fff; padding:20px; border-radius:12px; max-width:400px; width:90%; position:relative; }
-        .close-modal { position:absolute; top:10px; right:12px; font-size:20px; cursor:pointer; color:#666; }
-        .package { border:1px solid #ddd; border-radius:8px; padding:12px; margin:10px 0; cursor:pointer; }
-        .package:hover { background:#f5f5f5; }
-        #qrcode { text-align:center; margin:15px 0; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+        .modal-content { background:#2D2D3F; padding:25px; border-radius:12px; max-width:400px; width:90%; position:relative; color:#fff; }
+        .close-modal { position:absolute; top:10px; right:15px; font-size:22px; cursor:pointer; color:#fff; }
+        .package { border:1px solid #555; border-radius:8px; padding:14px; margin:10px 0; cursor:pointer; background:#3D3D5F; text-align:center; }
+        .package:hover { background:#50507A; }
     </style>
 </head>
 <body>
 
-<!-- 右侧常驻充值按钮：永远显示 -->
-<button id="payBtn">充值会员</button>
-
+<button id="payBtn">开通会员</button>
 <h1>Blind Touch</h1>
 <div id="status">✅ 待匹配</div>
 <div id="matchStatus"></div>
@@ -69,27 +67,19 @@
 </div>
 
 <div class="btn-group">
-    <button id="matchBtn">开始匹配（加载中...）</button>
+    <button id="matchBtn">加载中...</button>
     <button id="leaveBtn">离开对话</button>
 </div>
-
 <div id="toast" class="toast"></div>
 
-<!-- 付费弹窗 -->
+<!-- 支付弹窗 -->
 <div id="payModal" class="modal">
     <div class="modal-content">
         <span class="close-modal">&times;</span>
-        <h2 style="text-align:center;margin-bottom:15px">选择付费套餐</h2>
-        <div class="package" data-price="5">
-            <strong>5元</strong> - 当日无限匹配
-        </div>
-        <div class="package" data-price="15">
-            <strong>15元</strong> - 7天无限匹配
-        </div>
-        <div class="package" data-price="30">
-            <strong>30元</strong> - 1个月无限匹配
-        </div>
-        <div id="qrcode"></div>
+        <h2 style="text-align:center; margin-bottom:20px;">解锁无限聊天</h2>
+        <div class="package" data-price="5"><strong>5元</strong><br>当日无限</div>
+        <div class="package" data-price="15"><strong>15元</strong><br>7天无限</div>
+        <div class="package" data-price="30"><strong>30元</strong><br>30天无限</div>
     </div>
 </div>
 
@@ -97,187 +87,84 @@
 <script>
 const socket = io();
 const userId = socket.id;
-let myMsgCount = 0, otherMsgCount = 0, isMatching = false;
-let currentLeftCount = 0;
+let isMatching = false;
 let isVip = false;
 
 const matchBtn = document.getElementById('matchBtn');
 const leaveBtn = document.getElementById('leaveBtn');
 const sendBtn = document.getElementById('send');
-const toast = document.getElementById('toast');
-const payModal = document.getElementById('payModal');
 const payBtn = document.getElementById('payBtn');
-const qrcodeBox = document.getElementById('qrcode');
+const payModal = document.getElementById('payModal');
 
-function resetToInitialState() {
-    myMsgCount = otherMsgCount = 0;
+function reset() {
     document.getElementById('chat').innerHTML = '';
-    document.getElementById('message').value = '';
     sendBtn.classList.remove('enabled');
     sendBtn.disabled = true;
     leaveBtn.style.display = 'none';
-    document.getElementById('matchStatus').style.display = 'none';
     document.getElementById('status').innerText = "✅ 待匹配";
 }
 
-function showToast(text) {
-    toast.innerText = text; toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1000);
+async function loadUser() {
+    let res = await fetch('/user-auth?userId='+userId);
+    let d = await res.json();
+    isVip = d.isVip;
+    if (isVip) matchBtn.innerText = "开始匹配（无限）";
+    else matchBtn.innerText = `开始匹配（剩余${d.freeToday}次）`;
 }
 
-// 按钮逻辑：不再隐藏，永远显示
-function updatePayButtonVisibility() {
-    payBtn.style.display = "block"; // 强制一直显示
-}
+payBtn.onclick = () => payModal.style.display = 'flex';
+document.querySelector('.close-modal').onclick = () => payModal.style.display = 'none';
 
-async function loadAuth() {
-    const res = await fetch(`/user-auth?userId=${userId}`);
-    const data = await res.json();
-    isVip = data.isVip;
-    currentLeftCount = data.freeToday;
-
-    if (isVip) {
-        matchBtn.innerText = "开始匹配（无限次数）";
-    } else {
-        matchBtn.innerText = `开始匹配（今日剩余${data.freeToday}次）`;
+// 支付 —— 100% 修复版
+document.querySelectorAll('.package').forEach(p => {
+    p.onclick = async () => {
+        let price = p.dataset.price;
+        let res = await fetch('/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, price })
+        });
+        let d = await res.json();
+        if (d.payUrl) location.href = d.payUrl;
     }
-    updatePayButtonVisibility();
-}
-
-socket.on('left_count', (n) => {
-    currentLeftCount = n;
-    if (isVip || n >= 999) {
-        matchBtn.innerText = "开始匹配（无限次数）";
-    } else {
-        matchBtn.innerText = `开始匹配（今日剩余${n}次）`;
-    }
-    updatePayButtonVisibility();
 });
-
-socket.on('waiting', () => {
-    isMatching = true;
-    matchBtn.innerText = "取消匹配";
-    const st = document.getElementById('matchStatus');
-    st.style.display = 'block';
-    st.style.background = '#fff3cd';
-    st.style.color = '#856404';
-    st.innerText = '⏳ 正在匹配中，可以随时取消';
-});
-
-socket.on('match_success', () => {
-    isMatching = false;
-    matchBtn.innerText = "开始匹配";
-    const st = document.getElementById('matchStatus');
-    st.style.display = 'block';
-    st.style.background = '#d4edda';
-    st.style.color = '#155724';
-    st.innerText = '✅ 匹配成功！开始聊天';
-    sendBtn.classList.add('enabled');
-    sendBtn.disabled = false;
-    leaveBtn.style.display = 'inline-block';
-    document.getElementById('status').innerText = "✅ 对方在线";
-});
-
-socket.on('match_canceled', () => {
-    isMatching = false;
-    matchBtn.innerText = "开始匹配";
-    resetToInitialState();
-});
-
-socket.on('match_error', (msg) => {
-    isMatching = false;
-    matchBtn.innerText = "开始匹配";
-    const st = document.getElementById('matchStatus');
-    st.style.display = 'block';
-    st.style.background = '#f8d7da';
-    st.style.color = '#721c24';
-    st.innerText = '❌ ' + msg;
-});
-
-socket.on('chat_end', (msg) => {
-    showToast(msg);
-    setTimeout(resetToInitialState, 1000);
-});
-
-socket.on('user_leave', () => {
-    showToast("对方已离开对话");
-    setTimeout(resetToInitialState, 1000);
-});
-
-socket.on('new_message', (data) => {
-    const chat = document.getElementById('chat');
-    const isMe = data.user === socket.id;
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'message ' + (isMe ? 'mine' : 'other');
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.innerText = data.msg;
-    const count = document.createElement('div');
-    count.className = 'msgCount';
-    if (isMe) {
-        myMsgCount++;
-        count.innerText = `我 · 第${myMsgCount}条`;
-    } else {
-        otherMsgCount++;
-        count.innerText = `对方 · 第${otherMsgCount}条`;
-    }
-    msgDiv.append(bubble, count);
-    chat.appendChild(msgDiv);
-    chat.scrollTop = chat.scrollHeight;
-});
-
-sendBtn.onclick = () => {
-    const msg = document.getElementById('message').value.trim();
-    if (msg && sendBtn.classList.contains('enabled')) {
-        socket.emit('send_message', msg);
-        document.getElementById('message').value = '';
-    }
-};
 
 matchBtn.onclick = () => {
-    if (!isMatching) {
-        resetToInitialState();
-        socket.emit('start_match');
-    } else {
-        socket.emit('cancel_match');
-    }
+    if (!isMatching) { socket.emit('start_match'); isMatching = true; matchBtn.innerText = "取消匹配"; }
+    else { socket.emit('cancel_match'); isMatching = false; matchBtn.innerText = "开始匹配"; }
 };
 
-leaveBtn.onclick = () => {
-    socket.emit('leave_chat');
-    showToast("你已离开对话");
-    setTimeout(resetToInitialState, 1000);
+leaveBtn.onclick = () => socket.emit('leave_chat');
+sendBtn.onclick = () => {
+    let msg = document.getElementById('message').value.trim();
+    if (msg) { socket.emit('send_message', msg); document.getElementById('message').value = ''; }
 };
 
-// 右侧按钮点开付费弹窗
-payBtn.onclick = () => {
-    payModal.style.display = 'flex';
-};
-
-// 关闭弹窗
-document.querySelector('.close-modal').onclick = () => {
-    payModal.style.display = 'none';
-};
-
-// 套餐点击
-document.querySelectorAll('.package').forEach(pkg => {
-    pkg.onclick = () => {
-        const price = pkg.getAttribute('data-price');
-        fetch('/create-order', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({userId,price})
-        })
-        .then(r=>r.json())
-        .then(d=>{
-            if(d.payUrl) window.location.href=d.payUrl;
-        });
-    };
+socket.on('match_success', () => {
+    isMatching = false; matchBtn.innerText = "开始匹配";
+    sendBtn.classList.add('enabled'); sendBtn.disabled = false;
+    leaveBtn.style.display = "inline-block";
+    document.getElementById('status').innerText = "✅ 已连接";
 });
 
-// 初始化
-loadAuth();
-</script>
+socket.on('waiting', () => document.getElementById('status').innerText = "⏳ 匹配中...");
+socket.on('match_canceled', () => { isMatching = false; matchBtn.innerText = "开始匹配"; });
+socket.on('chat_end', () => reset());
+socket.on('user_leave', () => reset());
+socket.on('new_message', (d) => {
+    let div = document.createElement('div');
+    div.className = d.user === userId ? 'message mine' : 'message other';
+    let b = document.createElement('div');
+    b.className = 'bubble';
+    b.innerText = d.msg;
+    div.appendChild(b);
+    document.getElementById('chat').appendChild(div);
+    document.getElementById('chat').scrollTop = 99999;
+});
+socket.on('left_count', n => { if (!isVip) matchBtn.innerText = `开始匹配（剩余${n}次）`; });
+socket.on('match_error', msg => alert(msg));
 
+loadUser();
+</script>
 </body>
 </html>
