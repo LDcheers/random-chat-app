@@ -13,14 +13,23 @@
   #payBtn{background:red;color:white;display:none}
 </style>
 </head>
-<body>
+<body> 
 <h2>随机陌生人聊天</h2>
 <div id="status">未连接</div>
 <div id="chat"></div>
 <input id="text" maxlength="30" placeholder="输入消息（最多30字）"><br>
 <button id="send" disabled>发送</button>
 <button id="match">开始匹配</button>
-<button id="payBtn">付费解锁无限匹配</button>
+<button id="payBtn">付费解锁无限匹配</button
+<!-- 匹配状态提示框 -->
+<div id="matchStatus" style="
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+  display: none;
+"></div>                              
 
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 <script>
