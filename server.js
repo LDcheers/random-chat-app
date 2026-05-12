@@ -14,7 +14,6 @@ app.use(express.static(path.join(__dirname, '.')));
 // 已帮你填好配置，无需再改
 const PAY_API_KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
 const PAY_MERCHANT_ID = "3653";
-// 自动沿用你原有Railway域名作为回调地址
 const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
 
 // 数据库初始化
@@ -29,12 +28,16 @@ let waitingUser = null;
 let userChats = {};
 let userMessageCounts = {};
 
-// 创建订单
+// ======================
+// 🔥 已修复支付链接报错
+// ======================
 app.post('/create-order', (req, res) => {
   const { userId, price } = req.body;
-  const orderId = crypto.randomUUID();
+  const orderId = crypto.randomUUID().replace(/-/g, ''); // 去掉横线
+  const totalFee = parseFloat(price).toFixed(2);
 
-  const payUrl = `https://qixiangpay.cn/api/create?apikey=${PAY_API_KEY}&merchant_id=${PAY_MERCHANT_ID}&out_trade_no=${orderId}&total_fee=${price}&notify_url=${BASE_URL}/pay-notify&return_url=${BASE_URL}`;
+  const payUrl = `https://qixiangpay.cn/api/create?apikey=${PAY_API_KEY}&merchant_id=${PAY_MERCHANT_ID}&out_trade_no=${orderId}&total_fee=${totalFee}&notify_url=${BASE_URL}/pay-notify&return_url=${BASE_URL}&pay_type=alipay`;
+
   res.json({ orderId, payUrl });
 });
 
@@ -67,7 +70,7 @@ app.get('/user-auth', (req, res) => {
   });
 });
 
-// 聊天Socket逻辑
+// Socket 匹配聊天
 io.on('connection', (socket) => {
   const userId = socket.id;
 
