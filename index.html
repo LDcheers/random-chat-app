@@ -7,10 +7,9 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     body{background:#111;color:#fff;padding:20px}
-    .container{max-width:420px;margin:0 auto}
+    .container{max-width:420px;margin:0 auto;position:relative}
     .header{text-align:center;margin:30px 0}
     .logo{font-size:28px;font-weight:bold;color:#fff;margin-bottom:10px}
-    .tip{color:#888;font-size:14px}
     .btn{width:100%;padding:16px;border-radius:12px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer}
     .btn:disabled{background:#444;color:#777}
     .status{text-align:center;color:#aaa;margin:12px 0;font-size:15px}
@@ -30,6 +29,43 @@
     .switch-txt{text-align:center;margin-top:15px;color:#888}
     .switch-txt span{color:#ff4080;cursor:pointer}
     .hide{display:none !important}
+
+    /* 聊天序号样式 */
+    .chat-number{
+      font-size:11px;
+      color:#aaa;
+      margin-bottom:3px;
+    }
+
+    /* 右侧充值菜单 */
+    .vip-menu{
+      position:absolute;
+      top:10px;
+      right:0;
+      z-index:888;
+    }
+    .vip-dropdown{
+      display:none;
+      position:absolute;
+      top:40px;
+      right:0;
+      width:180px;
+      background:#222;
+      border-radius:12px;
+      padding:10px;
+    }
+    .vip-menu-btn{
+      background:#ff4080;
+      color:#fff;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .vip-menu.show .vip-dropdown{
+      display:block;
+    }
   </style>
 </head>
 <body>
@@ -47,11 +83,20 @@
 <div class="container" id="mainPage" class="hide">
   <div class="header">
     <div class="logo">BlindTouch</div>
-    <div class="tip">匿名随机聊天 · 遇见有趣的人</div>
   </div>
+
+  <!-- 右侧充值菜单 -->
+  <div class="vip-menu" id="vipMenu">
+    <button class="vip-menu-btn" id="vipBtn">💎 充值</button>
+    <div class="vip-dropdown">
+      <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
+      <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
+      <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
+    </div>
+  </div>
+
   <div class="status" id="status">未匹配</div>
   <div class="status" id="left">免费次数：3</div>
-  <div class="status" id="chatCount">当前聊天：0 句</div>
 
   <button class="btn" id="match">开始匹配</button>
   <button class="btn" id="leave" disabled>结束聊天</button>
@@ -62,13 +107,6 @@
     <input id="msg" placeholder="输入消息..." disabled>
     <button class="btn" id="send" disabled>发送</button>
   </div>
-
-  <div class="vip-group">
-    <div class="vip-title">💎 解锁无限匹配</div>
-    <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
-    <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
-    <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
-  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -77,6 +115,7 @@
   let nowMode = "login";
   let loginUsername = "";
   let matching = false;
+  let msgSeq = 0;
 
   const mask = document.getElementById('mask');
   const mainPage = document.getElementById('mainPage');
@@ -88,12 +127,18 @@
 
   const status = document.getElementById('status');
   const left = document.getElementById('left');
-  const chatCount = document.getElementById('chatCount');
   const match = document.getElementById('match');
   const leave = document.getElementById('leave');
   const chat = document.getElementById('chat');
   const msg = document.getElementById('msg');
   const send = document.getElementById('send');
+
+  const vipMenu = document.getElementById('vipMenu');
+  const vipBtn = document.getElementById('vipBtn');
+  
+  vipBtn.onclick = () => {
+    vipMenu.classList.toggle('show');
+  };
 
   window.onload = function(){
     let user = localStorage.getItem('btUser');
@@ -133,38 +178,55 @@
     left.innerText=`免费次数：${data.freeToday} ${isVip?'（已开通会员）':''}`;
   }
 
-  match.onclick=()=>{if(matching)return;matching=true;match.disabled=true;socket.emit('start_match');};
+  match.onclick=()=>{if(matching)return;matching=true;match.disabled=true;socket.emit('start_match');msgSeq=0;};
   leave.onclick=()=>{socket.emit('leave_chat');reset();};
 
   send.onclick=()=>{
     let t=msg.value.trim();if(!t)return;
-    addMsg(t,true);
-    socket.emit('send_message',t);
+    msgSeq++;
+    addMsg(t,true, msgSeq);
+    socket.emit('send_message',{text:t, seq:msgSeq});
     msg.value='';
   };
 
-  function addMsg(text,me){
-    let d=document.createElement('div');
-    d.style.margin='8px 0';d.style.padding='10px 14px';d.style.borderRadius='12px';d.style.maxWidth='75%';d.style.wordBreak='break-word';
-    if(me){d.style.background='#ff4080';d.style.color='#fff';d.style.marginLeft='auto';}
-    else{d.style.background='#2a2a2a';d.style.color='#fff';}
-    d.innerText=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  // ✅ 消息带序号
+  function addMsg(text,me,seq){
+    let wrap = document.createElement('div');
+    wrap.style.margin = '8px 0';
+
+    let num = document.createElement('div');
+    num.className = 'chat-number';
+    num.innerText = '第' + seq + '句';
+
+    let bubble = document.createElement('div');
+    bubble.style.padding='10px 14px';bubble.style.borderRadius='12px';bubble.style.maxWidth='75%';bubble.style.wordBreak='break-word';
+    if(me){bubble.style.background='#ff4080';bubble.style.color='#fff';bubble.style.marginLeft='auto';}
+    else{bubble.style.background='#2a2a2a';bubble.style.color='#fff';}
+    bubble.innerText=text;
+
+    wrap.appendChild(num);
+    wrap.appendChild(bubble);
+    chat.appendChild(wrap);
+    chat.scrollTop=chat.scrollHeight;
   }
 
   function reset(){
     matching=false;match.disabled=false;leave.disabled=true;msg.disabled=true;send.disabled=true;
-    chat.innerHTML='';status.innerText='未匹配';chatCount.innerText='当前聊天：0 句';
+    chat.innerHTML='';status.innerText='未匹配';msgSeq=0;
   }
 
   socket.on('waiting',()=>status.innerText='正在匹配...');
   socket.on('match_error',(t)=>{alert(t);reset();});
   socket.on('match_success',()=>{status.innerText='匹配成功';leave.disabled=false;msg.disabled=false;send.disabled=false;});
-  socket.on('new_message',(o)=>addMsg(o.msg,false));
+  socket.on('new_message',(o)=>{
+    msgSeq++;
+    addMsg(o.msg,false,msgSeq);
+  });
   socket.on('chat_end',()=>{alert('对方已离开');reset();});
   socket.on('user_leave',()=>{alert('对方断开');reset();});
   socket.on('left_count',(n)=>left.innerText='免费次数：'+n);
-  socket.on('chat_count',(n)=>chatCount.innerText='当前聊天：'+n+' 句');
 
+  // 右侧菜单充值
   document.querySelectorAll('.vip-item').forEach(item=>{
     item.onclick=async()=>{
       let price=item.dataset.price;
@@ -172,7 +234,8 @@
       let f=document.createElement('form');f.method='POST';f.action=data.formUrl;f.target='_blank';
       for(let k in data.formData){let i=document.createElement('input');i.type='hidden';i.name=k;i.value=data.formData[k];f.appendChild(i);}
       document.body.appendChild(f);f.submit();setTimeout(()=>f.remove(),500);
-    }
+      vipMenu.classList.remove('show');
+    };
   });
 </script>
 </body>
