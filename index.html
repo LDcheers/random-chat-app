@@ -23,8 +23,6 @@
     .vip-item:active{background:#333}
     .vip-name{font-weight:bold}
     .vip-price{color:#ff4080}
-
-    /* 登录注册弹窗 */
     .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
     .login-box{width:90%;max-width:360px;background:#1e1e1e;border-radius:16px;padding:24px}
     .login-box h3{text-align:center;margin-bottom:20px;font-size:20px}
@@ -35,242 +33,147 @@
   </style>
 </head>
 <body>
-  <!-- 登录注册弹窗 -->
-  <div class="mask" id="mask">
-    <div class="login-box">
-      <h3 id="winTitle">登录</h3>
-      <input type="text" id="username" placeholder="请输入账号">
-      <input type="password" id="pwd" placeholder="请输入密码">
-      <button class="btn" id="submitBtn">立即登录</button>
-      <div class="switch-txt" id="switchTxt">没有账号？<span id="switchBtn">去注册</span></div>
-    </div>
+
+<div class="mask" id="mask">
+  <div class="login-box">
+    <h3 id="winTitle">登录</h3>
+    <input type="text" id="username" placeholder="请输入账号">
+    <input type="password" id="pwd" placeholder="请输入密码">
+    <button class="btn" id="submitBtn">立即登录</button>
+    <div class="switch-txt" id="switchTxt">没有账号？<span id="switchBtn">去注册</span></div>
+  </div>
+</div>
+
+<div class="container" id="mainPage" class="hide">
+  <div class="header">
+    <div class="logo">BlindTouch</div>
+    <div class="tip">匿名随机聊天 · 遇见有趣的人</div>
+  </div>
+  <div class="status" id="status">未匹配</div>
+  <div class="status" id="left">免费次数：3</div>
+  <div class="status" id="chatCount">当前聊天：0 句</div>
+
+  <button class="btn" id="match">开始匹配</button>
+  <button class="btn" id="leave" disabled>结束聊天</button>
+
+  <div class="chat-box" id="chat"></div>
+
+  <div class="input-row">
+    <input id="msg" placeholder="输入消息..." disabled>
+    <button class="btn" id="send" disabled>发送</button>
   </div>
 
-  <!-- 主界面 -->
-  <div class="container" id="mainPage" class="hide">
-    <div class="header">
-      <div class="logo">BlindTouch</div>
-    
-    </div>
-
-    <div class="status" id="status">未匹配</div>
-    <div class="status" id="left">免费次数：3</div>
-
-    <button class="btn" id="match">开始匹配</button>
-    <button class="btn" id="leave" disabled>结束聊天</button>
-
-    <div class="chat-box" id="chat"></div>
-
-    <div class="input-row">
-      <input id="msg" placeholder="输入消息..." disabled>
-      <button class="btn" id="send" disabled>发送</button>
-    </div>
-
-    <div class="vip-group">
-      <div class="vip-title">💎 解锁无限匹配</div>
-      <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
-      <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
-      <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
-    </div>
+  <div class="vip-group">
+    <div class="vip-title">💎 解锁无限匹配</div>
+    <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
+    <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
+    <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
   </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    let userId = "";
-    let nowMode = "login";
-    let loginUsername = "";
-    let matching = false;
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  let nowMode = "login";
+  let loginUsername = "";
+  let matching = false;
 
-    // 元素
-    const mask = document.getElementById('mask');
-    const mainPage = document.getElementById('mainPage');
-    const winTitle = document.getElementById('winTitle');
-    const submitBtn = document.getElementById('submitBtn');
-    const switchBtn = document.getElementById('switchBtn');
-    const switchTxt = document.getElementById('switchTxt');
-    const usernameInp = document.getElementById('username');
-    const pwdInp = document.getElementById('pwd');
+  const mask = document.getElementById('mask');
+  const mainPage = document.getElementById('mainPage');
+  const winTitle = document.getElementById('winTitle');
+  const submitBtn = document.getElementById('submitBtn');
+  const switchBtn = document.getElementById('switchBtn');
+  const usernameInp = document.getElementById('username');
+  const pwdInp = document.getElementById('pwd');
 
-    const status = document.getElementById('status');
-    const left = document.getElementById('left');
-    const match = document.getElementById('match');
-    const leave = document.getElementById('leave');
-    const chat = document.getElementById('chat');
-    const msg = document.getElementById('msg');
-    const send = document.getElementById('send');
+  const status = document.getElementById('status');
+  const left = document.getElementById('left');
+  const chatCount = document.getElementById('chatCount');
+  const match = document.getElementById('match');
+  const leave = document.getElementById('leave');
+  const chat = document.getElementById('chat');
+  const msg = document.getElementById('msg');
+  const send = document.getElementById('send');
 
-    // 自动记住登录
-    window.onload = function(){
-      let user = localStorage.getItem('btUser');
-      if(user){
-        let u = JSON.parse(user);
-        loginUsername = u.username;
-        enterMain();
-      }
-    };
+  window.onload = function(){
+    let user = localStorage.getItem('btUser');
+    if(user){ enterMain(JSON.parse(user).username); }
+  };
 
-    // 切换登录/注册
-    switchBtn.onclick = function(){
-      if(nowMode === "login"){
-        nowMode = "reg";
-        winTitle.innerText = "注册账号";
-        submitBtn.innerText = "立即注册";
-        switchTxt.innerHTML = "已有账号？<span id='switchBtn'>去登录</span>";
-      }else{
-        nowMode = "login";
-        winTitle.innerText = "登录";
-        submitBtn.innerText = "立即登录";
-        switchTxt.innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
-      }
-      // 重新绑定
-      document.getElementById('switchBtn').onclick = switchBtn.onclick;
-    };
-
-    // 提交 登录/注册
-    submitBtn.onclick = async function(){
-      let un = usernameInp.value.trim();
-      let pd = pwdInp.value.trim();
-      if(!un || !pd){
-        alert('账号和密码不能为空');
-        return;
-      }
-      if(nowMode === "reg"){
-        let res = await fetch('/register',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({username:un,password:pd})
-        });
-        let d = await res.json();
-        if(d.code !== 0){
-          alert(d.msg);
-          return;
-        }
-        alert('注册成功，请登录');
-        nowMode = "login";
-        winTitle.innerText = "登录";
-        submitBtn.innerText = "立即登录";
-        switchTxt.innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
-        document.getElementById('switchBtn').onclick = switchBtn.onclick;
-      }else{
-        let res = await fetch('/login',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({username:un,password:pd})
-        });
-        let d = await res.json();
-        if(d.code !== 0){
-          alert(d.msg);
-          return;
-        }
-        // 登录成功 保存本地
-        loginUsername = un;
-        localStorage.setItem('btUser',JSON.stringify({username:un}));
-        enterMain();
-      }
-    };
-
-    // 进入主页
-    async function enterMain(){
-      mask.classList.add('hide');
-      mainPage.classList.remove('hide');
-      // 读取账号的次数和VIP
-      let res = await fetch('/getAccountUser?username='+loginUsername);
-      let data = await res.json();
-      let isVip = data.expireTime > Date.now();
-      left.innerText = `免费次数：${data.freeToday} ${isVip ? '（已开通会员）' : ''}`;
+  switchBtn.onclick = function(){
+    if(nowMode === "login"){
+      nowMode = "reg"; winTitle.innerText = "注册账号"; submitBtn.innerText = "立即注册";
+      switchTxt.innerHTML = "已有账号？<span id='switchBtn'>去登录</span>";
+    }else{
+      nowMode = "login"; winTitle.innerText = "登录"; submitBtn.innerText = "立即登录";
+      switchTxt.innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
     }
+    document.getElementById('switchBtn').onclick = switchBtn.onclick;
+  };
 
-    // 聊天原有逻辑不变
-    match.onclick = () => {
-      if(matching) return;
-      matching = true;
-      match.disabled = true;
-      socket.emit('start_match');
-    };
-
-    leave.onclick = () => {
-      socket.emit('leave_chat');
-      reset();
-    };
-
-    send.onclick = () => {
-      let t = msg.value.trim();
-      if(!t) return;
-      socket.emit('send_message', t);
-      addMsg(t, true);
-      msg.value = '';
-    };
-
-    function addMsg(text, me){
-      let d = document.createElement('div');
-      d.style.margin = '8px 0';
-      d.style.padding = '10px 14px';
-      d.style.borderRadius = '12px';
-      d.style.maxWidth = '75%';
-      d.style.wordBreak='break-word';
-      if(me){
-        d.style.background='#ff4080';
-        d.style.color='#fff';
-        d.style.marginLeft='auto';
-      }else{
-        d.style.background='#2a2a2a';
-        d.style.color='#fff';
-      }
-      d.innerText = text;
-      chat.appendChild(d);
-      chat.scrollTop = chat.scrollHeight;
+  submitBtn.onclick = async function(){
+    let un = usernameInp.value.trim(), pd = pwdInp.value.trim();
+    if(!un||!pd){alert('不能为空');return}
+    if(nowMode==="reg"){
+      let d=await(await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pd})})).json();
+      if(d.code!==0){alert(d.msg);return}
+      alert('注册成功，请登录'); nowMode="login"; winTitle.innerText="登录"; submitBtn.innerText="立即登录";
+    }else{
+      let d=await(await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pd})})).json();
+      if(d.code!==0){alert(d.msg);return}
+      loginUsername=un; localStorage.setItem('btUser',JSON.stringify({username:un}));
+      enterMain(un);
     }
+  };
 
-    function reset(){
-      matching = false;
-      match.disabled = false;
-      leave.disabled = true;
-      msg.disabled = true;
-      send.disabled = true;
-      chat.innerHTML = '';
-      status.innerText = '未匹配';
+  async function enterMain(un){
+    mask.classList.add('hide'); mainPage.classList.remove('hide');
+    let data=await(await fetch('/getAccountUser?username='+un)).json();
+    let isVip=data.expireTime>Date.now();
+    left.innerText=`免费次数：${data.freeToday} ${isVip?'（已开通会员）':''}`;
+  }
+
+  match.onclick=()=>{if(matching)return;matching=true;match.disabled=true;socket.emit('start_match');};
+  leave.onclick=()=>{socket.emit('leave_chat');reset();};
+
+  send.onclick=()=>{
+    let t=msg.value.trim();if(!t)return;
+    addMsg(t,true);
+    socket.emit('send_message',t);
+    msg.value='';
+  };
+
+  function addMsg(text,me){
+    let d=document.createElement('div');
+    d.style.margin='8px 0';d.style.padding='10px 14px';d.style.borderRadius='12px';d.style.maxWidth='75%';d.style.wordBreak='break-word';
+    if(me){d.style.background='#ff4080';d.style.color='#fff';d.style.marginLeft='auto';}
+    else{d.style.background='#2a2a2a';d.style.color='#fff';}
+    d.innerText=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  }
+
+  function reset(){
+    matching=false;match.disabled=false;leave.disabled=true;msg.disabled=true;send.disabled=true;
+    chat.innerHTML='';status.innerText='未匹配';chatCount.innerText='当前聊天：0 句';
+  }
+
+  socket.on('waiting',()=>status.innerText='正在匹配...');
+  socket.on('match_error',(t)=>{alert(t);reset();});
+  socket.on('match_success',()=>{status.innerText='匹配成功';leave.disabled=false;msg.disabled=false;send.disabled=false;});
+  socket.on('new_message',(o)=>addMsg(o.msg,false));
+  socket.on('chat_end',()=>{alert('对方已离开');reset();});
+  socket.on('user_leave',()=>{alert('对方断开');reset();});
+  socket.on('left_count',(n)=>left.innerText='免费次数：'+n);
+  socket.on('chat_count',(n)=>chatCount.innerText='当前聊天：'+n+' 句');
+
+  document.querySelectorAll('.vip-item').forEach(item=>{
+    item.onclick=async()=>{
+      let price=item.dataset.price;
+      let data=await(await fetch('/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:loginUsername,price})})).json();
+      let f=document.createElement('form');f.method='POST';f.action=data.formUrl;f.target='_blank';
+      for(let k in data.formData){let i=document.createElement('input');i.type='hidden';i.name=k;i.value=data.formData[k];f.appendChild(i);}
+      document.body.appendChild(f);f.submit();setTimeout(()=>f.remove(),500);
     }
-
-    socket.on('waiting', ()=> status.innerText='正在匹配...');
-    socket.on('match_error', (t)=>{alert(t);reset();});
-    socket.on('match_success', ()=>{
-      status.innerText='匹配成功';
-      leave.disabled=false;
-      msg.disabled=false;
-      send.disabled=false;
-    });
-    socket.on('new_message', (o)=> addMsg(o.msg, false));
-    socket.on('chat_end', ()=>{alert('对方已离开');reset();});
-    socket.on('user_leave', ()=>{alert('对方断开');reset();});
-    socket.on('left_count', (n)=> left.innerText='免费次数：'+n);
-
-    // 支付逻辑不变
-    document.querySelectorAll('.vip-item').forEach(item=>{
-      item.onclick = async ()=>{
-        let price = item.dataset.price;
-        let res = await fetch('/create-order', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({userId: loginUsername, price})
-        });
-        let data = await res.json();
-        let f = document.createElement('form');
-        f.method='POST';
-        f.action=data.formUrl;
-        f.target='_blank';
-        for(let k in data.formData){
-          let i = document.createElement('input');
-          i.type='hidden';
-          i.name=k;
-          i.value=data.formData[k];
-          f.appendChild(i);
-        }
-        document.body.appendChild(f);
-        f.submit();
-        setTimeout(()=>f.remove(),500);
-      }
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
