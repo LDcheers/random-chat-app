@@ -219,6 +219,58 @@ io.on('connection', (socket) => {
   });
 });
 
+
+// ========== 管理员：查看所有注册用户 ==========
+app.get('/admin/users', (req, res) => {
+  db.all(`SELECT username, password, freeToday, expireTime, createTime FROM account_users`, (err, rows) => {
+    if (err) return res.send('错误：' + err.message);
+    let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <title>用户列表</title>
+    <style>body{background:#111;color:#fff;padding:20px;font-family:Arial}</style>
+    </head>
+    <body>
+    <h2>BlindTouch 注册用户列表</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+      <tr>
+        <th>账号</th>
+        <th>密码</th>
+        <th>免费次数</th>
+        <th>VIP到期时间</th>
+        <th>注册时间</th>
+      </tr>`;
+
+    rows.forEach(u => {
+      let vipExpire = u.expireTime > Date.now() ? new Date(u.expireTime).toLocaleString() : "非VIP";
+      let regTime = new Date(u.createTime).toLocaleString();
+      html += `
+      <tr>
+        <td>${u.username}</td>
+        <td>${u.password}</td>
+        <td>${u.freeToday}</td>
+        <td>${vipExpire}</td>
+        <td>${regTime}</td>
+      </tr>`;
+    });
+
+    html += `</table></body></html>`;
+    res.send(html);
+  });
+});
+
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('运行正常'));
+
+
+
+
+
+
+
+
+
