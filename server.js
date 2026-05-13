@@ -12,30 +12,41 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-// 你的配置
+// 支付配置
 const PID = "3653";
 const KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
 const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
 const API_URL = "https://api.payqixiang.cn/submit.php";
 
+// 数据库初始化
 const db = new sqlite3.Database('./users.db');
+
+// 游客表（旧）
 db.run(`CREATE TABLE IF NOT EXISTS users (
   userId TEXT PRIMARY KEY,
   freeToday INTEGER DEFAULT 3,
   expireTime INTEGER DEFAULT 0
 )`);
 
+// 账号用户表（新注册登录）
+db.run(`CREATE TABLE IF NOT EXISTS account_users (
+  username TEXT PRIMARY KEY,
+  password TEXT NOT NULL,
+  freeToday INTEGER DEFAULT 3,
+  expireTime INTEGER DEFAULT 0,
+  createTime INTEGER
+)`);
+
 let waitingUser = null;
 let userChats = {};
 
-// ✅ 完全按官方文档实现的签名算法
+// ========== 支付接口 原样保留 ==========
 app.post('/create-order', (req, res) => {
   const { userId, price } = req.body;
   const out_trade_no = crypto.randomUUID().replace(/-/g, '');
   const money = parseFloat(price).toFixed(2);
   const name = "BlindTouch会员";
 
-  // 按文档要求：所有参数按 ASCII 码升序排序
   const params = {
     money: money,
     name: name,
@@ -46,7 +57,6 @@ app.post('/create-order', (req, res) => {
     type: "alipay"
   };
 
-  // 按文档规则拼接（无多余&，不编码）
   const sortedKeys = Object.keys(params).sort();
   let signStr = "";
   sortedKeys.forEach(k => {
@@ -84,11 +94,63 @@ app.post('/pay-notify', (req, res) => {
   if (+money == 5) exp = now + 86400000;
   if (+money == 15) exp = now + 604800000;
   if (+money == 30) exp = now + 2592000000;
-  db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?,999,?)`, [out_trade_no, exp]);
+
+  // 兼容：优先更新账号用户，无则游客
+  const payUserId = out_trade_no;
+  db.get(`SELECT username FROM account_users WHERE username=?`, [payUserId], (err, row) => {
+    if (row) {
+      db.run(`UPDATE account_users SET expireTime=?, freeToday=999 WHERE username=?`, [exp, payUserId]);
+    } else {
+      db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?,999,?)`, [out_trade_no, exp]);
+    }
+  });
   res.end('success');
 });
 
-// 其他功能完全不变
+// ========== 账号注册 登录接口 ==========
+// 注册
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.json({ code: -1, msg: '账号密码不能为空' });
+  if (username.length < 3) return res.json({ code: -1, msg: '账号至少3位' });
+
+  db.get(`SELECT username FROM account_users WHERE username=?`, [username], (err, row) => {
+    if (row) return res.json({ code: -1, msg: '账号已存在' });
+    const t = Date.now();
+    db.run(`INSERT INTO account_users (username,password,freeToday,expireTime,createTime) VALUES (?,?,3,0,?)`,
+      [username, password, t],
+      () => {
+        res.json({ code: 0, msg: '注册成功' });
+      });
+  });
+});
+
+// 登录
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  db.get(`SELECT * FROM account_users WHERE username=? AND password=?`, [username, password], (err, row) => {
+    if (!row) return res.json({ code: -1, msg: '账号或密码错误' });
+    res.json({
+      code: 0,
+      data: {
+        username: row.username,
+        freeToday: row.freeToday,
+        expireTime: row.expireTime
+      }
+    });
+  });
+});
+
+// 获取账号用户信息
+app.get('/getAccountUser', (req, res) => {
+  const { username } = req.query;
+  db.get(`SELECT freeToday,expireTime FROM account_users WHERE username=?`, [username], (err, row) => {
+    if (!row) return res.json({ freeToday: 3, expireTime: 0 });
+    res.json(row);
+  });
+});
+
+// 旧游客接口保留
 app.get('/user-auth', (req, res) => {
   db.get(`SELECT * FROM users WHERE userId=?`, [req.query.userId], (e, r) => {
     if (!r) r = { freeToday: 3, expireTime: 0 };
@@ -96,6 +158,7 @@ app.get('/user-auth', (req, res) => {
   });
 });
 
+// ========== 聊天匹配 socket 原样保留 ==========
 io.on('connection', (socket) => {
   const uid = socket.id;
   db.run(`INSERT OR IGNORE INTO users(userId) VALUES(?)`, [uid]);
@@ -131,4 +194,5 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-server.listen(process.env.PORT || 3000, () => console.log('ok'));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log('运行正常'));
