@@ -25,6 +25,13 @@
     .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#222;color:#fff;outline:none;transition:all 0.2s ease}
     .input-row input:focus{background:#252525;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
 
+    /* 右侧快捷联系方式栏 */
+    .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#1e1e1e;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+    .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#ddd}
+    .right-bar textarea{width:100px;height:100px;background:#2a2a2a;border:none;border-radius:10px;color:#fff;padding:8px;outline:none;resize:none;font-size:13px}
+    .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#ff4080;color:#fff;cursor:pointer}
+    .bar-btn:active{opacity:0.9}
+
     .vip-group{margin-top:24px}
     .vip-title{font-size:16px;margin-bottom:12px;color:#ddd}
     .vip-item{background:#222;border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s ease}
@@ -51,9 +58,21 @@
     .switch-txt{text-align:center;margin-top:18px;color:#888;font-size:14px}
     .switch-txt span{color:#ff4080;cursor:pointer}
     .hide{display:none !important}
+
+    /* 联系信息按钮 */
+    .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#2288ff;color:#fff;font-size:14px;cursor:pointer}
+    .send-contact:disabled{background:#334;cursor:not-allowed}
   </style>
 </head>
 <body>
+
+<!-- 右侧快捷联系方式栏 -->
+<div class="right-bar">
+  <h4>我的联系方式</h4>
+  <textarea id="contactTxt" placeholder="输入微信/QQ/手机号"></textarea>
+  <button class="bar-btn" id="saveContact">保存</button>
+  <button class="bar-btn" id="clearContact" style="background:#444">清空</button>
+</div>
 
 <div class="mask" id="mask">
   <div class="login-box">
@@ -90,6 +109,7 @@
   <div class="input-row">
     <input id="msg" placeholder="输入消息..." disabled>
     <button class="btn" id="send" disabled>发送</button>
+    <button class="send-contact" id="sendContact" disabled>发送联系方式</button>
   </div>
 </div>
 
@@ -100,6 +120,7 @@
   let loginUsername = "";
   let matching = false;
   let msgSeq = 0;
+  const NEED_MIN = 5; // 满5句才能发联系方式
 
   const mask = document.getElementById('mask');
   const mainPage = document.getElementById('mainPage');
@@ -116,6 +137,12 @@
   const chat = document.getElementById('chat');
   const msg = document.getElementById('msg');
   const send = document.getElementById('send');
+  const sendContact = document.getElementById('sendContact');
+
+  // 联系方式栏
+  const contactTxt = document.getElementById('contactTxt');
+  const saveContact = document.getElementById('saveContact');
+  const clearContact = document.getElementById('clearContact');
 
   const vipMenu = document.getElementById('vipMenu');
   const vipBtn = document.getElementById('vipBtn');
@@ -131,9 +158,24 @@
     }
   });
 
+  // 读取本地保存的联系方式
   window.onload = function(){
     let user = localStorage.getItem('btUser');
+    let myContact = localStorage.getItem('myContact') || '';
+    contactTxt.value = myContact;
+
     if(user){ enterMain(JSON.parse(user).username); }
+  };
+
+  // 保存联系方式
+  saveContact.onclick = () => {
+    localStorage.setItem('myContact', contactTxt.value.trim());
+    alert('联系方式已保存');
+  };
+  // 清空联系方式
+  clearContact.onclick = () => {
+    contactTxt.value = '';
+    localStorage.removeItem('myContact');
   };
 
   switchBtn.onclick = function(){
@@ -169,7 +211,15 @@
     left.innerText=`免费次数：${data.freeToday} ${isVip?'（已开通会员）':''}`;
   }
 
-  match.onclick=()=>{if(matching)return;matching=true;match.disabled=true;socket.emit('start_match');msgSeq=0;};
+  match.onclick=()=>{
+    if(matching)return;
+    matching=true;
+    match.disabled=true;
+    socket.emit('start_match');
+    msgSeq=0;
+    sendContact.disabled = true;
+  };
+
   leave.onclick=()=>{socket.emit('leave_chat');reset();};
 
   send.onclick=()=>{
@@ -178,9 +228,27 @@
     addMsg(t,true, msgSeq);
     socket.emit('send_message', t);
     msg.value='';
+    checkContactBtn();
   };
 
-  // ✅ 修复：消息文本赋值给气泡，解决不显示文字问题
+  // 发送联系方式
+  sendContact.onclick = () => {
+    let cont = localStorage.getItem('myContact') || '';
+    if(!cont){
+      alert('请先在右侧填写并保存你的联系方式');
+      return;
+    }
+    msgSeq++;
+    addMsg('我的联系方式：' + cont, true, msgSeq);
+    socket.emit('send_message', '我的联系方式：' + cont);
+    checkContactBtn();
+  };
+
+  function checkContactBtn(){
+    sendContact.disabled = msgSeq < NEED_MIN;
+  }
+
+  // 修复：消息文本赋值给气泡，解决不显示文字问题
   function addMsg(text,me,seq){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -195,7 +263,7 @@
     bubble.style.maxWidth='75%';
     bubble.style.wordBreak='break-word';
     bubble.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
-    bubble.innerText = text; // 关键修复：把文字赋值给气泡
+    bubble.innerText = text;
 
     if(me){
       bubble.style.background='#ff4080';
@@ -215,14 +283,22 @@
   function reset(){
     matching=false;match.disabled=false;leave.disabled=true;msg.disabled=true;send.disabled=true;
     chat.innerHTML='';status.innerText='未匹配';msgSeq=0;
+    sendContact.disabled = true;
   }
 
   socket.on('waiting',()=>status.innerText='正在匹配...');
   socket.on('match_error',(t)=>{alert(t);reset();});
-  socket.on('match_success',()=>{status.innerText='匹配成功';leave.disabled=false;msg.disabled=false;send.disabled=false;});
+  socket.on('match_success',()=>{
+    status.innerText='匹配成功';
+    leave.disabled=false;
+    msg.disabled=false;
+    send.disabled=false;
+    sendContact.disabled = true;
+  });
   socket.on('new_message',(o)=>{
     msgSeq++;
     addMsg(o.msg,false,msgSeq);
+    checkContactBtn();
   });
   socket.on('chat_end',()=>{alert('对方已离开');reset();});
   socket.on('user_leave',()=>{alert('对方断开');reset();});
