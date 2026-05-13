@@ -46,7 +46,7 @@ app.post('/create-order', (req, res) => {
     return_url: BASE_URL
   };
 
-  // 修复后的正确签名
+  // 修复后的正确签名算法
   const keys = Object.keys(params).sort();
   let signStr = '';
   keys.forEach(k => {
