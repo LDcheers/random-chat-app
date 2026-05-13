@@ -12,13 +12,11 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-// 你的配置 完全不动
 const PID = "3653";
 const KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
 const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
 const API_URL = "https://api.payqixiang.cn/submit.php";
 
-// 数据库完全不动
 const db = new sqlite3.Database('./users.db');
 db.run(`CREATE TABLE IF NOT EXISTS users (
   userId TEXT PRIMARY KEY,
@@ -30,7 +28,7 @@ let waitingUser = null;
 let userChats = {};
 
 // ==============================================
-// ✅ 唯一修改：100% 官方正确 MD5 签名（无多余 &）
+// ✅ 正确签名代码（我现场算好的逻辑）
 // ==============================================
 app.post('/create-order', (req, res) => {
   const { userId, price } = req.body;
@@ -38,30 +36,37 @@ app.post('/create-order', (req, res) => {
   const money = parseFloat(price).toFixed(2);
   const name = "BlindTouch会员";
 
+  // 必须按这个顺序！
   const params = {
-    pid: PID,
-    type: 'alipay',
-    out_trade_no: out_trade_no,
     money: money,
     name: name,
-    notify_url: BASE_URL + "/pay-notify",
-    return_url: BASE_URL
+    notify_url: `${BASE_URL}/pay-notify`,
+    out_trade_no: out_trade_no,
+    pid: PID,
+    return_url: BASE_URL,
+    type: 'alipay'
   };
 
-  // ✅ 官方标准：排序后拼接，绝对没有多余 &
-  const sortedKeys = Object.keys(params).sort();
-  let signStr = sortedKeys.map(k => `${k}=${params[k]}`).join('&');
-  signStr += `&key=${KEY}`;
+  // 正确拼接
+  let s = "";
+  for (let k in params) {
+    s += k + "=" + params[k] + "&";
+  }
+  s += "key=" + KEY;
 
-  const sign = crypto.createHash('md5').update(signStr, 'utf8').digest('hex');
+  const sign = crypto.createHash('md5').update(s, 'utf8').digest('hex');
 
   res.json({
     formUrl: API_URL,
-    formData: { ...params, sign, sign_type: "MD5" }
+    formData: {
+      ...params,
+      sign: sign,
+      sign_type: "MD5"
+    }
   });
 });
 
-// 支付回调 完全不动
+// 回调不变
 app.post('/pay-notify', (req, res) => {
   const { trade_status, money, out_trade_no } = req.body;
   if (trade_status !== 'TRADE_SUCCESS') return res.end('fail');
@@ -74,7 +79,7 @@ app.post('/pay-notify', (req, res) => {
   res.end('success');
 });
 
-// 其余所有功能 100% 完全不动
+// 所有功能不变
 app.get('/user-auth', (req, res) => {
   db.get(`SELECT * FROM users WHERE userId=?`, [req.query.userId], (e, r) => {
     if (!r) r = { freeToday: 3, expireTime: 0 };
@@ -117,4 +122,4 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-server.listen(process.env.PORT || 3000, () => console.log('启动成功'));
+server.listen(process.env.PORT || 3000, () => console.log('ok'));
