@@ -1,130 +1,169 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
-const crypto = require('crypto');
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlindTouch</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    body{background:#111;color:#fff;padding:20px}
+    .container{max-width:420px;margin:0 auto}
+    .header{text-align:center;margin:30px 0}
+    .logo{font-size:28px;font-weight:bold;color:#fff;margin-bottom:10px}
+    .tip{color:#888;font-size:14px}
+    .btn{width:100%;padding:16px;border-radius:12px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer}
+    .btn:disabled{background:#444;color:#777}
+    .status{text-align:center;color:#aaa;margin:12px 0;font-size:15px}
+    .chat-box{height:460px;background:#1a1a1a;border-radius:12px;padding:14px;overflow-y:auto;margin:12px 0}
+    .input-row{display:flex;gap:10px;margin-top:10px}
+    .input-row input{flex:1;padding:14px 16px;border-radius:12px;border:none;background:#222;color:#fff;outline:none}
+    .vip-group{margin-top:24px}
+    .vip-title{font-size:16px;margin-bottom:12px}
+    .vip-item{background:#222;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
+    .vip-item:active{background:#333}
+    .vip-name{font-weight:bold}
+    .vip-price{color:#ff4080}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">BlindTouch</div>
+      <div class="tip">匿名随机聊天 · 遇见有趣的人</div>
+    </div>
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+    <div class="status" id="status">未匹配</div>
+    <div class="status" id="left">免费次数：3</div>
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '.')));
+    <button class="btn" id="match">开始匹配</button>
+    <button class="btn" id="leave" disabled>结束聊天</button>
 
-// 你的配置
-const PID = "3653";
-const KEY = "8QZZ8RuzhfizCVvaaufkRZu9AKcfurC0";
-const BASE_URL = "https://random-chat-app-production-a19a.up.railway.app";
-const API_URL = "https://api.payqixiang.cn/submit.php";
+    <div class="chat-box" id="chat"></div>
 
-// 数据库
-const db = new sqlite3.Database('./users.db');
-db.run(`CREATE TABLE IF NOT EXISTS users (
-  userId TEXT PRIMARY KEY,
-  freeToday INTEGER DEFAULT 3,
-  expireTime INTEGER DEFAULT 0
-)`);
+    <div class="input-row">
+      <input id="msg" placeholder="输入消息..." disabled>
+      <button class="btn" id="send" disabled>发送</button>
+    </div>
 
-let waitingUser = null;
-let userChats = {};
+    <div class="vip-group">
+      <div class="vip-title">💎 解锁无限匹配</div>
+      <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
+      <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
+      <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
+    </div>
+  </div>
 
-// ==============================================
-// 官方支付接口（submit.php POST + 正确签名）
-// ==============================================
-app.post('/create-order', (req, res) => {
-  const { userId, price } = req.body;
-  const out_trade_no = crypto.randomUUID().replace(/-/g, '');
-  const money = parseFloat(price).toFixed(2);
-  const name = "会员";
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const userId = socket.id;
+    let matching = false;
 
-  const params = {
-    pid: PID,
-    type: 'alipay',
-    out_trade_no: out_trade_no,
-    money: money,
-    name: name,
-    notify_url: `${BASE_URL}/pay-notify`,
-    return_url: BASE_URL
-  };
+    const status = document.getElementById('status');
+    const left = document.getElementById('left');
+    const match = document.getElementById('match');
+    const leave = document.getElementById('leave');
+    const chat = document.getElementById('chat');
+    const msg = document.getElementById('msg');
+    const send = document.getElementById('send');
 
-  // 正确签名
-  let signStr = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&') + `&key=${KEY}`;
-  const sign = crypto.createHash('md5').update(signStr, 'utf8').digest('hex');
+    async function loadUser(){
+      let res = await fetch('/user-auth?userId='+userId);
+      let data = await res.json();
+      left.innerText = `免费次数：${data.freeToday} ${data.isVip ? '（已开通会员）' : ''}`;
+    }
+    loadUser();
 
-  res.json({
-    formUrl: API_URL,
-    formData: { ...params, sign, sign_type: 'MD5' }
-  });
-});
+    match.onclick = () => {
+      if(matching) return;
+      matching = true;
+      match.disabled = true;
+      socket.emit('start_match');
+    };
 
-// 支付回调
-app.post('/pay-notify', (req, res) => {
-  const { trade_status, money, out_trade_no } = req.body;
-  if (trade_status !== 'TRADE_SUCCESS') return res.end('fail');
+    leave.onclick = () => {
+      socket.emit('leave_chat');
+      reset();
+    };
 
-  const now = Date.now();
-  let expire = 0;
-  if (+money === 5) expire = now + 86400000;
-  if (+money === 15) expire = now + 604800000;
-  if (+money === 30) expire = now + 2592000000;
+    send.onclick = () => {
+      let t = msg.value.trim();
+      if(!t) return;
+      socket.emit('send_message', t);
+      addMsg(t, true);
+      msg.value = '';
+    };
 
-  db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?, 999, ?)`, [out_trade_no, expire]);
-  res.end('success');
-});
-
-// 获取用户权限
-app.get('/user-auth', (req, res) => {
-  const userId = req.query.userId;
-  db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
-    if (!row) row = { freeToday: 3, expireTime: 0 };
-    res.json({
-      freeToday: row.freeToday,
-      isVip: row.expireTime > Date.now()
-    });
-  });
-});
-
-// ==============================================
-// 聊天匹配逻辑（完全不变）
-// ==============================================
-io.on('connection', (socket) => {
-  const userId = socket.id;
-  db.run(`INSERT OR IGNORE INTO users (userId) VALUES (?)`, [userId]);
-
-  socket.on('start_match', () => {
-    db.get(`SELECT * FROM users WHERE userId = ?`, [userId], (err, row) => {
-      const isVip = row?.expireTime > Date.now();
-      const left = isVip ? 999 : (row?.freeToday || 0);
-
-      if (!isVip && left <= 0) {
-        socket.emit('match_error', '今日免费次数已用完，请开通会员');
-        return;
+    function addMsg(text, me){
+      let d = document.createElement('div');
+      d.style.margin = '8px 0';
+      d.style.padding = '10px 14px';
+      d.style.borderRadius = '12px';
+      d.style.maxWidth = '75%';
+      d.style.wordBreak='break-word';
+      if(me){
+        d.style.background='#ff4080';
+        d.style.color='#fff';
+        d.style.marginLeft='auto';
+      }else{
+        d.style.background='#2a2a2a';
+        d.style.color='#fff';
       }
+      d.innerText = text;
+      chat.appendChild(d);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-      if (waitingUser && waitingUser !== userId) {
-        const chatId = `chat_${Date.now()}`;
-        userChats[userId] = chatId;
-        userChats[waitingUser] = chatId;
-        socket.join(chatId);
-        io.sockets.sockets.get(waitingUser)?.join(chatId);
-        io.to(chatId).emit('match_success');
-        waitingUser = null;
-        if (!isVip) db.run(`UPDATE users SET freeToday = freeToday - 1 WHERE userId = ?`, [userId]);
-        socket.emit('left_count', left - 1);
-      } else {
-        waitingUser = userId;
-        socket.emit('waiting');
-        socket.emit('left_count', left);
+    function reset(){
+      matching = false;
+      match.disabled = false;
+      leave.disabled = true;
+      msg.disabled = true;
+      send.disabled = true;
+      chat.innerHTML = '';
+      status.innerText = '未匹配';
+      loadUser();
+    }
+
+    socket.on('waiting', ()=> status.innerText='正在匹配...');
+    socket.on('match_error', (t)=>{alert(t);reset();});
+    socket.on('match_success', ()=>{
+      status.innerText='匹配成功';
+      leave.disabled=false;
+      msg.disabled=false;
+      send.disabled=false;
+    });
+    socket.on('new_message', (o)=> addMsg(o.msg, false));
+    socket.on('chat_end', ()=>{alert('对方已离开');reset();});
+    socket.on('user_leave', ()=>{alert('对方断开');reset();});
+    socket.on('left_count', (n)=> left.innerText='免费次数：'+n);
+
+    // 支付逻辑
+    document.querySelectorAll('.vip-item').forEach(item=>{
+      item.onclick = async ()=>{
+        let price = item.dataset.price;
+        let res = await fetch('/create-order', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({userId, price})
+        });
+        let data = await res.json();
+        let f = document.createElement('form');
+        f.method='POST';
+        f.action=data.formUrl;
+        f.target='_blank';
+        for(let k in data.formData){
+          let i = document.createElement('input');
+          i.type='hidden';
+          i.name=k;
+          i.value=data.formData[k];
+          f.appendChild(i);
+        }
+        document.body.appendChild(f);
+        f.submit();
+        setTimeout(()=>f.remove(),500);
       }
     });
-  });
-
-  socket.on('cancel_match', () => { if (waitingUser === userId) waitingUser = null; });
-  socket.on('leave_chat', () => { const c = userChats[userId]; if (c) io.to(c).emit('chat_end'); delete userChats[userId]; });
-  socket.on('send_message', (msg) => { const c = userChats[userId]; if (c) io.to(c).emit('new_message', { user: userId, msg }); });
-  socket.on('disconnect', () => { if (waitingUser === userId) waitingUser = null; const c = userChats[userId]; if (c) io.to(c).emit('user_leave'); delete userChats[userId]; });
-});
-
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-server.listen(process.env.PORT || 3000, () => console.log('服务启动成功'));
+  </script>
+</body>
+</html>
