@@ -39,6 +39,7 @@ db.run(`CREATE TABLE IF NOT EXISTS account_users (
 
 let waitingUser = null;
 let userChats = {};
+let messageCount = {}; // 聊天消息计数
 
 // ========== 支付接口 原样保留 ==========
 app.post('/create-order', (req, res) => {
@@ -95,11 +96,9 @@ app.post('/pay-notify', (req, res) => {
   if (+money == 15) exp = now + 604800000;
   if (+money == 30) exp = now + 2592000000;
 
-  // 兼容：优先更新账号用户，无则游客
-  const payUserId = out_trade_no;
-  db.get(`SELECT username FROM account_users WHERE username=?`, [payUserId], (err, row) => {
+  db.get(`SELECT username FROM account_users WHERE username=?`, [out_trade_no], (err, row) => {
     if (row) {
-      db.run(`UPDATE account_users SET expireTime=?, freeToday=999 WHERE username=?`, [exp, payUserId]);
+      db.run(`UPDATE account_users SET expireTime=? WHERE username=?`, [exp, out_trade_no]);
     } else {
       db.run(`REPLACE INTO users (userId, freeToday, expireTime) VALUES (?,999,?)`, [out_trade_no, exp]);
     }
@@ -108,7 +107,6 @@ app.post('/pay-notify', (req, res) => {
 });
 
 // ========== 账号注册 登录接口 ==========
-// 注册
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.json({ code: -1, msg: '账号密码不能为空' });
@@ -125,7 +123,6 @@ app.post('/register', (req, res) => {
   });
 });
 
-// 登录
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   db.get(`SELECT * FROM account_users WHERE username=? AND password=?`, [username, password], (err, row) => {
@@ -141,7 +138,6 @@ app.post('/login', (req, res) => {
   });
 });
 
-// 获取账号用户信息
 app.get('/getAccountUser', (req, res) => {
   const { username } = req.query;
   db.get(`SELECT freeToday,expireTime FROM account_users WHERE username=?`, [username], (err, row) => {
@@ -150,7 +146,6 @@ app.get('/getAccountUser', (req, res) => {
   });
 });
 
-// 旧游客接口保留
 app.get('/user-auth', (req, res) => {
   db.get(`SELECT * FROM users WHERE userId=?`, [req.query.userId], (e, r) => {
     if (!r) r = { freeToday: 3, expireTime: 0 };
@@ -158,7 +153,7 @@ app.get('/user-auth', (req, res) => {
   });
 });
 
-// ========== 聊天匹配 socket 原样保留 ==========
+// ========== 聊天匹配逻辑（已修复重复消息 + 恢复计数） ==========
 io.on('connection', (socket) => {
   const uid = socket.id;
   db.run(`INSERT OR IGNORE INTO users(userId) VALUES(?)`, [uid]);
@@ -170,14 +165,20 @@ io.on('connection', (socket) => {
       if (!vip && left <= 0) return socket.emit('match_error', '今日免费次数已用完');
 
       if (waitingUser && waitingUser !== uid) {
-        const c = `chat_${Date.now()}`;
-        userChats[uid] = c;
-        userChats[waitingUser] = c;
-        socket.join(c);
-        io.sockets.sockets.get(waitingUser)?.join(c);
-        io.to(c).emit('match_success');
-        if (!vip) db.run(`UPDATE users SET freeToday=freeToday-1 WHERE userId=?`, [uid]);
-        socket.emit('left_count', left - 1);
+        const room = `chat_${Date.now()}`;
+        userChats[uid] = room;
+        userChats[waitingUser] = room;
+        messageCount[room] = 0;
+
+        socket.join(room);
+        io.sockets.sockets.get(waitingUser).join(room);
+        io.to(room).emit('match_success');
+
+        if (!vip) {
+          db.run(`UPDATE users SET freeToday=freeToday-1 WHERE userId=?`, [uid]);
+          socket.emit('left_count', left - 1);
+        }
+
         waitingUser = null;
       } else {
         waitingUser = uid;
@@ -187,10 +188,35 @@ io.on('connection', (socket) => {
     });
   });
 
+  // ✅ 修复：消息只发给对方，不发给自己（解决重复）
+  socket.on('send_message', (msg) => {
+    const room = userChats[uid];
+    if (!room) return;
+    socket.to(room).emit('new_message', { user: uid, msg: msg });
+
+    // 恢复计数
+    messageCount[room] = (messageCount[room] || 0) + 1;
+    io.to(room).emit('chat_count', messageCount[room]);
+  });
+
   socket.on('cancel_match', () => { if (waitingUser === uid) waitingUser = null; });
-  socket.on('leave_chat', () => { const c = userChats[uid]; if (c) io.to(c).emit('chat_end'); delete userChats[uid]; });
-  socket.on('send_message', m => { const c = userChats[uid]; if (c) io.to(c).emit('new_message', { user: uid, msg: m }); });
-  socket.on('disconnect', () => { if (waitingUser === uid) waitingUser = null; const c = userChats[uid]; if (c) io.to(c).emit('user_leave'); delete userChats[uid]; });
+  
+  socket.on('leave_chat', () => {
+    const room = userChats[uid];
+    if (room) {
+      io.to(room).emit('chat_end');
+      delete userChats[uid];
+    }
+  });
+
+  socket.on('disconnect', () => {
+    if (waitingUser === uid) waitingUser = null;
+    const room = userChats[uid];
+    if (room) {
+      io.to(room).emit('user_leave');
+      delete userChats[uid];
+    }
+  });
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
