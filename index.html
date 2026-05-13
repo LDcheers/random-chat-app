@@ -6,66 +6,51 @@
   <title>BlindTouch</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    body{background:#111;color:#fff;padding:20px}
+    body{background:#111;color:#fff;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
-    .header{text-align:center;margin:30px 0}
-    .logo{font-size:28px;font-weight:bold;color:#fff;margin-bottom:10px}
-    .btn{width:100%;padding:16px;border-radius:12px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer}
-    .btn:disabled{background:#444;color:#777}
-    .status{text-align:center;color:#aaa;margin:12px 0;font-size:15px}
-    .chat-box{height:460px;background:#1a1a1a;border-radius:12px;padding:14px;overflow-y:auto;margin:12px 0}
-    .input-row{display:flex;gap:10px;margin-top:10px}
-    .input-row input{flex:1;padding:14px 16px;border-radius:12px;border:none;background:#222;color:#fff;outline:none}
+    .header{text-align:center;margin:24px 0 20px}
+    .logo{font-size:28px;font-weight:700;color:#fff;letter-spacing:2px}
+
+    /* 按钮美化 保留原色+微动效 */
+    .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(255,64,128,0.15)}
+    .btn:active{transform:scale(0.98);opacity:0.92}
+    .btn:disabled{background:#333;color:#667;box-shadow:none;transform:none}
+
+    .status{text-align:center;color:#aaa;margin:10px 0;font-size:15px}
+    .chat-box{height:460px;background:#1a1a1a;border-radius:18px;padding:16px;overflow-y:auto;margin:12px 0;box-shadow:inset 0 0 10px rgba(0,0,0,0.3)}
+    .chat-box::-webkit-scrollbar{width:4px}
+    .chat-box::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+
+    .input-row{display:flex;gap:10px;margin-top:12px}
+    .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#222;color:#fff;outline:none;transition:all 0.2s ease}
+    .input-row input:focus{background:#252525;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
+
     .vip-group{margin-top:24px}
-    .vip-title{font-size:16px;margin-bottom:12px}
-    .vip-item{background:#222;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
-    .vip-item:active{background:#333}
-    .vip-name{font-weight:bold}
-    .vip-price{color:#ff4080}
-    .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
-    .login-box{width:90%;max-width:360px;background:#1e1e1e;border-radius:16px;padding:24px}
-    .login-box h3{text-align:center;margin-bottom:20px;font-size:20px}
-    .login-box input{width:100%;padding:14px;border-radius:10px;border:none;background:#2a2a2a;color:#fff;margin-bottom:14px;outline:none}
-    .switch-txt{text-align:center;margin-top:15px;color:#888}
-    .switch-txt span{color:#ff4080;cursor:pointer}
-    .hide{display:none !important}
+    .vip-title{font-size:16px;margin-bottom:12px;color:#ddd}
+    .vip-item{background:#222;border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s ease}
+    .vip-item:active{background:#2a2a2a}
+    .vip-name{font-weight:500;margin-bottom:4px}
+    .vip-price{color:#ff4080;font-weight:500}
 
     /* 聊天序号样式 */
-    .chat-number{
-      font-size:11px;
-      color:#aaa;
-      margin-bottom:3px;
-    }
+    .chat-number{font-size:11px;color:#999;margin-bottom:4px}
 
-    /* 右侧充值菜单 */
-    .vip-menu{
-      position:absolute;
-      top:10px;
-      right:0;
-      z-index:888;
-    }
-    .vip-dropdown{
-      display:none;
-      position:absolute;
-      top:40px;
-      right:0;
-      width:180px;
-      background:#222;
-      border-radius:12px;
-      padding:10px;
-    }
-    .vip-menu-btn{
-      background:#ff4080;
-      color:#fff;
-      border:none;
-      padding:8px 12px;
-      border-radius:8px;
-      cursor:pointer;
-      font-size:14px;
-    }
-    .vip-menu.show .vip-dropdown{
-      display:block;
-    }
+    /* 右侧充值下拉菜单美化 */
+    .vip-menu{position:absolute;top:10px;right:0;z-index:888}
+    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#222;border-radius:16px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+    .vip-menu-btn{background:#ff4080;color:#fff;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease}
+    .vip-menu-btn:active{transform:scale(0.96)}
+    .vip-menu.show .vip-dropdown{display:block}
+
+    /* 登录弹窗美化 */
+    .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:999}
+    .login-box{width:90%;max-width:360px;background:#1e1e1e;border-radius:20px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+    .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600}
+    .login-box input{width:100%;padding:14px;border-radius:14px;border:none;background:#2a2a2a;color:#fff;margin-bottom:16px;outline:none;transition:all 0.2s ease}
+    .login-box input:focus{background:#2f2f2f;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
+    .switch-txt{text-align:center;margin-top:18px;color:#888;font-size:14px}
+    .switch-txt span{color:#ff4080;cursor:pointer}
+    .hide{display:none !important}
   </style>
 </head>
 <body>
@@ -85,7 +70,6 @@
     <div class="logo">BlindTouch</div>
   </div>
 
-  <!-- 右侧充值菜单 -->
   <div class="vip-menu" id="vipMenu">
     <button class="vip-menu-btn" id="vipBtn">💎 充值</button>
     <div class="vip-dropdown">
@@ -140,6 +124,13 @@
     vipMenu.classList.toggle('show');
   };
 
+  // 点击页面空白关闭充值下拉
+  document.addEventListener('click',(e)=>{
+    if(!vipMenu.contains(e.target)){
+      vipMenu.classList.remove('show');
+    }
+  });
+
   window.onload = function(){
     let user = localStorage.getItem('btUser');
     if(user){ enterMain(JSON.parse(user).username); }
@@ -158,7 +149,7 @@
 
   submitBtn.onclick = async function(){
     let un = usernameInp.value.trim(), pd = pwdInp.value.trim();
-    if(!un||!pd){alert('不能为空');return}
+    if(!un||!pd){alert('账号和密码不能为空');return}
     if(nowMode==="reg"){
       let d=await(await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pd})})).json();
       if(d.code!==0){alert(d.msg);return}
@@ -189,20 +180,29 @@
     msg.value='';
   };
 
-  // ✅ 消息带序号
   function addMsg(text,me,seq){
     let wrap = document.createElement('div');
-    wrap.style.margin = '8px 0';
+    wrap.style.margin = '10px 0';
 
     let num = document.createElement('div');
     num.className = 'chat-number';
     num.innerText = '第' + seq + '句';
 
     let bubble = document.createElement('div');
-    bubble.style.padding='10px 14px';bubble.style.borderRadius='12px';bubble.style.maxWidth='75%';bubble.style.wordBreak='break-word';
-    if(me){bubble.style.background='#ff4080';bubble.style.color='#fff';bubble.style.marginLeft='auto';}
-    else{bubble.style.background='#2a2a2a';bubble.style.color='#fff';}
-    bubble.innerText=text;
+    bubble.style.padding='12px 16px';
+    bubble.style.borderRadius='18px';
+    bubble.style.maxWidth='75%';
+    bubble.style.wordBreak='break-word';
+    bubble.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
+
+    if(me){
+      bubble.style.background='#ff4080';
+      bubble.style.color='#fff';
+      bubble.style.marginLeft='auto';
+    }else{
+      bubble.style.background='#2a2a2a';
+      bubble.style.color='#fff';
+    }
 
     wrap.appendChild(num);
     wrap.appendChild(bubble);
@@ -226,7 +226,6 @@
   socket.on('user_leave',()=>{alert('对方断开');reset();});
   socket.on('left_count',(n)=>left.innerText='免费次数：'+n);
 
-  // 右侧菜单充值
   document.querySelectorAll('.vip-item').forEach(item=>{
     item.onclick=async()=>{
       let price=item.dataset.price;
