@@ -176,10 +176,11 @@
     let t=msg.value.trim();if(!t)return;
     msgSeq++;
     addMsg(t,true, msgSeq);
-    socket.emit('send_message',{text:t, seq:msgSeq});
+    socket.emit('send_message', t);
     msg.value='';
   };
 
+  // ✅ 修复：消息文本赋值给气泡，解决不显示文字问题
   function addMsg(text,me,seq){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -194,6 +195,7 @@
     bubble.style.maxWidth='75%';
     bubble.style.wordBreak='break-word';
     bubble.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
+    bubble.innerText = text; // 关键修复：把文字赋值给气泡
 
     if(me){
       bubble.style.background='#ff4080';
