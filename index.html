@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -11,7 +11,6 @@
     .header{text-align:center;margin:24px 0 20px}
     .logo{font-size:28px;font-weight:700;color:#fff;letter-spacing:2px}
 
-    /* 按钮美化 保留原色+微动效 */
     .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(255,64,128,0.15)}
     .btn:active{transform:scale(0.98);opacity:0.92}
     .btn:disabled{background:#333;color:#667;box-shadow:none;transform:none}
@@ -25,7 +24,6 @@
     .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#222;color:#fff;outline:none;transition:all 0.2s ease}
     .input-row input:focus{background:#252525;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
 
-    /* 右侧快捷联系方式栏 */
     .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#1e1e1e;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
     .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#ddd}
     .right-bar textarea{width:100px;height:100px;background:#2a2a2a;border:none;border-radius:10px;color:#fff;padding:8px;outline:none;resize:none;font-size:13px}
@@ -39,17 +37,14 @@
     .vip-name{font-weight:500;margin-bottom:4px}
     .vip-price{color:#ff4080;font-weight:500}
 
-    /* 聊天序号样式 */
     .chat-number{font-size:11px;color:#999;margin-bottom:4px}
 
-    /* 右侧充值下拉菜单美化 */
     .vip-menu{position:absolute;top:10px;right:0;z-index:888}
     .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#222;border-radius:16px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
     .vip-menu-btn{background:#ff4080;color:#fff;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease}
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
 
-    /* 登录弹窗美化 */
     .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:999}
     .login-box{width:90%;max-width:360px;background:#1e1e1e;border-radius:20px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
     .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600}
@@ -59,14 +54,12 @@
     .switch-txt span{color:#ff4080;cursor:pointer}
     .hide{display:none !important}
 
-    /* 联系信息按钮 */
     .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#2288ff;color:#fff;font-size:14px;cursor:pointer}
     .send-contact:disabled{background:#334;cursor:not-allowed}
   </style>
 </head>
 <body>
 
-<!-- 右侧快捷联系方式栏 -->
 <div class="right-bar">
   <h4>我的联系方式</h4>
   <textarea id="contactTxt" placeholder="输入微信/QQ/手机号"></textarea>
@@ -118,9 +111,14 @@
   const socket = io();
   let nowMode = "login";
   let loginUsername = "";
+  
+  // 匹配状态
   let matching = false;
-  let msgSeq = 0;
-  const NEED_MIN = 5; // 满5句才能发联系方式
+  // 独立计数：自己、对方 分开
+  let myMsgCount = 0;
+  let otherMsgCount = 0;
+  const MAX_SINGLE_LIMIT = 20;
+  const NEED_MIN = 5;
 
   const mask = document.getElementById('mask');
   const mainPage = document.getElementById('mainPage');
@@ -132,14 +130,13 @@
 
   const status = document.getElementById('status');
   const left = document.getElementById('left');
-  const match = document.getElementById('match');
+  const matchBtn = document.getElementById('match');
   const leave = document.getElementById('leave');
   const chat = document.getElementById('chat');
   const msg = document.getElementById('msg');
   const send = document.getElementById('send');
   const sendContact = document.getElementById('sendContact');
 
-  // 联系方式栏
   const contactTxt = document.getElementById('contactTxt');
   const saveContact = document.getElementById('saveContact');
   const clearContact = document.getElementById('clearContact');
@@ -151,28 +148,23 @@
     vipMenu.classList.toggle('show');
   };
 
-  // 点击页面空白关闭充值下拉
   document.addEventListener('click',(e)=>{
     if(!vipMenu.contains(e.target)){
       vipMenu.classList.remove('show');
     }
   });
 
-  // 读取本地保存的联系方式
   window.onload = function(){
     let user = localStorage.getItem('btUser');
     let myContact = localStorage.getItem('myContact') || '';
     contactTxt.value = myContact;
-
     if(user){ enterMain(JSON.parse(user).username); }
   };
 
-  // 保存联系方式
   saveContact.onclick = () => {
     localStorage.setItem('myContact', contactTxt.value.trim());
     alert('联系方式已保存');
   };
-  // 清空联系方式
   clearContact.onclick = () => {
     contactTxt.value = '';
     localStorage.removeItem('myContact');
@@ -211,51 +203,65 @@
     left.innerText=`免费次数：${data.freeToday} ${isVip?'（已开通会员）':''}`;
   }
 
-  match.onclick=()=>{
-    if(matching)return;
-    matching=true;
-    match.disabled=true;
-    socket.emit('start_match');
-    msgSeq=0;
-    sendContact.disabled = true;
+  // 匹配按钮点击逻辑 开始/停止匹配
+  matchBtn.onclick=()=>{
+    if(!matching){
+      // 开始匹配
+      matching = true;
+      matchBtn.innerText = "停止匹配";
+      status.innerText = "正在匹配...";
+      socket.emit('start_match');
+    }else{
+      // 停止匹配 不扣次数
+      matching = false;
+      socket.emit('stop_match');
+      reset();
+    }
   };
 
   leave.onclick=()=>{socket.emit('leave_chat');reset();};
 
   send.onclick=()=>{
     let t=msg.value.trim();if(!t)return;
-    msgSeq++;
-    addMsg(t,true, msgSeq);
+    if(myMsgCount >= MAX_SINGLE_LIMIT){
+      alert('你已达到本轮20句发言上限');
+      return;
+    }
+    myMsgCount++;
+    addMsg(t, true, myMsgCount);
     socket.emit('send_message', t);
     msg.value='';
     checkContactBtn();
   };
 
-  // 发送联系方式
   sendContact.onclick = () => {
     let cont = localStorage.getItem('myContact') || '';
     if(!cont){
       alert('请先在右侧填写并保存你的联系方式');
       return;
     }
-    msgSeq++;
-    addMsg('我的联系方式：' + cont, true, msgSeq);
+    if(myMsgCount >= MAX_SINGLE_LIMIT){
+      alert('你已达到本轮20句发言上限');
+      return;
+    }
+    myMsgCount++;
+    addMsg('我的联系方式：' + cont, true, myMsgCount);
     socket.emit('send_message', '我的联系方式：' + cont);
     checkContactBtn();
   };
 
   function checkContactBtn(){
-    sendContact.disabled = msgSeq < NEED_MIN;
+    sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
-  // 修复：消息文本赋值给气泡，解决不显示文字问题
-  function addMsg(text,me,seq){
+  // 独立计数渲染气泡
+  function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
 
     let num = document.createElement('div');
     num.className = 'chat-number';
-    num.innerText = '第' + seq + '句';
+    num.innerText = isMe ? `我第${count}句` : `对方第${count}句`;
 
     let bubble = document.createElement('div');
     bubble.style.padding='12px 16px';
@@ -265,7 +271,7 @@
     bubble.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
     bubble.innerText = text;
 
-    if(me){
+    if(isMe){
       bubble.style.background='#ff4080';
       bubble.style.color='#fff';
       bubble.style.marginLeft='auto';
@@ -281,8 +287,17 @@
   }
 
   function reset(){
-    matching=false;match.disabled=false;leave.disabled=true;msg.disabled=true;send.disabled=true;
-    chat.innerHTML='';status.innerText='未匹配';msgSeq=0;
+    matching=false;
+    matchBtn.disabled=false;
+    matchBtn.innerText="开始匹配";
+    leave.disabled=true;
+    msg.disabled=true;
+    send.disabled=true;
+    chat.innerHTML='';
+    status.innerText='未匹配';
+    // 重置各自计数
+    myMsgCount = 0;
+    otherMsgCount = 0;
     sendContact.disabled = true;
   }
 
@@ -295,11 +310,14 @@
     send.disabled=false;
     sendContact.disabled = true;
   });
-  socket.on('new_message',(o)=>{
-    msgSeq++;
-    addMsg(o.msg,false,msgSeq);
+
+  socket.on('new_message',(txt)=>{
+    if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
+    otherMsgCount++;
+    addMsg(txt, false, otherMsgCount);
     checkContactBtn();
   });
+
   socket.on('chat_end',()=>{alert('对方已离开');reset();});
   socket.on('user_leave',()=>{alert('对方断开');reset();});
   socket.on('left_count',(n)=>left.innerText='免费次数：'+n);
