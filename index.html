@@ -4,50 +4,80 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
-  <!-- 引入思源黑体 免费商用 -->
+  <!-- 思源黑体 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* 全局改成 思源黑体 所有设备统一字体 */
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Noto Sans SC',sans-serif}
     body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
-    .header{text-align:center;margin:24px 0 20px}
-    .logo{font-size:28px;font-weight:600;color:#c9d8f0;letter-spacing:2px}
 
+    /* ========== LOGO + 标题 飞入动画 ========== */
+    .header{
+      text-align:center;
+      margin:24px 0 20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      
+      /* 入场动画 */
+      opacity:0;
+      transform:translateX(-80px);
+      animation: logoFlyIn 1.1s 0.2s ease forwards;
+    }
+
+    /* 猫咪LOGO */
+    .page-logo{
+      width:36px;
+      height:36px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 10px #82b1f0);
+    }
+
+    /* Blind Touch 文字样式 */
+    .logo-text{
+      font-size:28px;
+      font-weight:600;
+      color:#c9d8f0;
+      letter-spacing:2px;
+      white-space:nowrap;
+    }
+
+    /* 飞入动画关键帧 */
+    @keyframes logoFlyIn {
+      to {
+        opacity:1;
+        transform:translateX(0);
+      }
+    }
+
+    /* ========== 原有样式 ========== */
     .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#e0ecfa;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 12px rgba(140,190,255,0.4)}
     .btn:active{transform:scale(0.98);opacity:0.9}
     .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none;cursor:not-allowed}
-
     .status{text-align:center;color:#8998b3;margin:10px 0;font-size:15px}
     .chat-box{height:460px;background:#101218;border-radius:18px;padding:16px;overflow-y:auto;margin:12px 0;box-shadow:inset 0 0 12px rgba(0,0,0,0.6)}
     .chat-box::-webkit-scrollbar{width:4px}
     .chat-box::-webkit-scrollbar-thumb{background:#252c3a;border-radius:4px}
-
     .input-row{display:flex;gap:10px;margin-top:12px}
     .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#141824;color:#d0dcec;outline:none;transition:all 0.2s ease}
     .input-row input:focus{background:#181c28;box-shadow:0 0 8px rgba(140,190,255,0.3)}
-
     .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#10121a;border-radius:16px;padding:14px;box-shadow:0 0 12px rgba(120,170,240,0.25)}
     .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#a1b4d8}
     .right-bar textarea{width:100px;height:100px;background:#141824;border:none;border-radius:10px;color:#c9d8f0;padding:8px;outline:none;resize:none;font-size:13px}
     .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#202838;color:#e0ecfa;cursor:pointer;box-shadow:0 0 10px rgba(140,190,255,0.35)}
     .bar-btn:active{opacity:0.9}
-
-    .vip-group{margin-top:24px}
     .vip-title{font-size:16px;margin-bottom:12px;color:#a1b4d8}
     .vip-item{background:#141824;border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s ease}
     .vip-item:active{background:#181e2b}
     .vip-name{font-weight:500;margin-bottom:4px;color:#c9d8f0}
     .vip-price{color:#82b1f0;font-weight:500}
-
     .chat-number{font-size:11px;color:#6b7a95;margin-bottom:4px}
-
     .vip-menu{position:absolute;top:10px;right:0;z-index:888}
     .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#10121a;border-radius:16px;padding:12px;box-shadow:0 0 15px rgba(100,150,220,0.3)}
     .vip-menu-btn{background:#202838;color:#e0ecfa;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease;box-shadow:0 0 10px rgba(140,190,255,0.35)}
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
-
     .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
     .login-box{width:90%;max-width:360px;background:#10121a;border-radius:20px;padding:28px;box-shadow:0 0 18px rgba(100,150,220,0.25)}
     .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600;color:#c9d8f0}
@@ -56,7 +86,6 @@
     .switch-txt{text-align:center;margin-top:18px;color:#6b7a95;font-size:14px}
     .switch-txt span{color:#82b1f0;cursor:pointer}
     .hide{display:none !important}
-
     .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#e0ecfa;font-size:14px;cursor:pointer;box-shadow:0 0 10px rgba(120,180,240,0.3)}
     .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
   </style>
@@ -81,8 +110,11 @@
 </div>
 
 <div class="container" id="mainPage" class="hide">
+  
+  <!-- ========== 新版 LOGO + 标题 飞入效果 ========== -->
   <div class="header">
-    <div class="logo">BlindTouch</div>
+    <img class="page-logo" src="https://p6-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/1baf630598ba47beb20a573369142528.jpeg~tplv-a9rns2rl98-image_dld_watermark_1_5.png?lk3s=8e244e9&rcl=20260514195821DD164A15F63F9235802F&rrcfp=dafada99&x-expires=2094983902&x-signature=Vo7fh4kP5%2BmdHLYM8OQ%2FfpkpE%3D" alt="LOGO">
+    <div class="logo-text">Blind Touch</div>
   </div>
 
   <div class="vip-menu" id="vipMenu">
