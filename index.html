@@ -4,15 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
+  <!-- 引入思源黑体 免费商用 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* 全局字体调整，更清爽现代 */
-    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif}
+    /* 全局改成 思源黑体 所有设备统一字体 */
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Noto Sans SC',sans-serif}
     body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
     .header{text-align:center;margin:24px 0 20px}
     .logo{font-size:28px;font-weight:600;color:#c9d8f0;letter-spacing:2px}
 
-    /* 按钮高亮发光效果 */
     .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#e0ecfa;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 12px rgba(140,190,255,0.4)}
     .btn:active{transform:scale(0.98);opacity:0.9}
     .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none;cursor:not-allowed}
@@ -293,7 +294,6 @@
     sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
-  // 气泡高亮发光，和你参考图效果完全一致
   function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -309,7 +309,6 @@
     bubble.style.wordBreak = 'break-word';
 
     if(isMe){
-      // 完全匹配你参考图的亮蓝色渐变+外发光
       bubble.style.background = 'linear-gradient(135deg, #b0e0ff, #e0f8ff)';
       bubble.style.color = '#081018';
       bubble.style.boxShadow = '0 0 16px rgba(180,230,255,0.6), 0 0 32px rgba(180,230,255,0.35)';
