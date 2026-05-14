@@ -13,7 +13,7 @@
 
     .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#b8d0f0;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 8px rgba(120,160,230,0.15)}
     .btn:active{transform:scale(0.98);opacity:0.9}
-    .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none}
+    .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none;cursor:not-allowed}
 
     .status{text-align:center;color:#8998b3;margin:10px 0;font-size:15px}
     .chat-box{height:460px;background:#101218;border-radius:18px;padding:16px;overflow-y:auto;margin:12px 0;box-shadow:inset 0 0 12px rgba(0,0,0,0.6)}
@@ -170,14 +170,12 @@
     localStorage.removeItem('myContact');
   };
 
-  // 修复注册/登录切换逻辑
   switchBtn.onclick = function(){
     if(nowMode === "login"){
       nowMode = "reg";
       winTitle.innerText = "注册账号";
       submitBtn.innerText = "立即注册";
       switchTxt.innerHTML = "已有账号？<span id='switchBtn'>去登录</span>";
-      // 重新绑定事件
       document.getElementById('switchBtn').onclick = switchBtn.onclick;
     }else{
       nowMode = "login";
@@ -188,7 +186,6 @@
     }
   };
 
-  // 修复登录/注册按钮点击事件
   submitBtn.onclick = async function(){
     let un = usernameInp.value.trim();
     let pd = pwdInp.value.trim();
@@ -294,6 +291,7 @@
     sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
+  // 气泡提亮 增强荧光发光 贴近你参考图
   function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -309,14 +307,14 @@
     bubble.style.wordBreak = 'break-word';
 
     if(isMe){
-      bubble.style.background = '#1e2a3e';
-      bubble.style.color = '#d0dcec';
-      bubble.style.boxShadow = '0 0 10px rgba(130,175,240,0.25)';
+      bubble.style.background = '#23344f';
+      bubble.style.color = '#e0ecfa';
+      bubble.style.boxShadow = '0 0 14px rgba(140,190,255,0.35)';
       bubble.style.marginLeft = 'auto';
     }else{
-      bubble.style.background = '#141c2b';
-      bubble.style.color = '#c9d8f0';
-      bubble.style.boxShadow = '0 0 10px rgba(100,140,210,0.2)';
+      bubble.style.background = '#1a273b';
+      bubble.style.color = '#d0dff5';
+      bubble.style.boxShadow = '0 0 14px rgba(110,160,230,0.3)';
     }
     bubble.innerText = text;
 
@@ -342,16 +340,20 @@
 
   socket.on('waiting', () => status.innerText = '正在匹配...');
   socket.on('match_error', (t) => { alert(t); reset(); });
+
+  // 匹配成功：锁定匹配按钮 禁止再点
   socket.on('match_success', () => {
     status.innerText = '匹配成功';
+    // 关键：匹配成功直接禁用匹配按钮
+    matchBtn.disabled = true;
     leave.disabled = false;
     msg.disabled = false;
     send.disabled = false;
     sendContact.disabled = true;
   });
 
+  // 修复对方收不到消息：正常渲染文本
   socket.on('new_message', (txt) => {
-    if(typeof txt !== 'string') return;
     if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
     otherMsgCount++;
     addMsg(txt, false, otherMsgCount);
