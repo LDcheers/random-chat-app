@@ -11,7 +11,8 @@
     .header{text-align:center;margin:24px 0 20px}
     .logo{font-size:28px;font-weight:600;color:#c9d8f0;letter-spacing:2px}
 
-    .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#b8d0f0;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 8px rgba(120,160,230,0.15)}
+    /* 按钮高亮发光效果 */
+    .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#e0ecfa;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 12px rgba(140,190,255,0.4)}
     .btn:active{transform:scale(0.98);opacity:0.9}
     .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none;cursor:not-allowed}
 
@@ -22,12 +23,12 @@
 
     .input-row{display:flex;gap:10px;margin-top:12px}
     .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#141824;color:#d0dcec;outline:none;transition:all 0.2s ease}
-    .input-row input:focus{background:#181c28;box-shadow:0 0 6px rgba(120,160,230,0.2)}
+    .input-row input:focus{background:#181c28;box-shadow:0 0 8px rgba(140,190,255,0.3)}
 
-    .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#10121a;border-radius:16px;padding:14px;box-shadow:0 0 10px rgba(100,140,220,0.12)}
+    .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#10121a;border-radius:16px;padding:14px;box-shadow:0 0 12px rgba(120,170,240,0.25)}
     .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#a1b4d8}
     .right-bar textarea{width:100px;height:100px;background:#141824;border:none;border-radius:10px;color:#c9d8f0;padding:8px;outline:none;resize:none;font-size:13px}
-    .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#202838;color:#b8d0f0;cursor:pointer;box-shadow:0 0 6px rgba(120,160,230,0.15)}
+    .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#202838;color:#e0ecfa;cursor:pointer;box-shadow:0 0 10px rgba(140,190,255,0.35)}
     .bar-btn:active{opacity:0.9}
 
     .vip-group{margin-top:24px}
@@ -40,21 +41,21 @@
     .chat-number{font-size:11px;color:#6b7a95;margin-bottom:4px}
 
     .vip-menu{position:absolute;top:10px;right:0;z-index:888}
-    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#10121a;border-radius:16px;padding:12px;box-shadow:0 0 12px rgba(80,120,200,0.15)}
-    .vip-menu-btn{background:#202838;color:#b8d0f0;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease;box-shadow:0 0 6px rgba(120,160,230,0.15)}
+    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#10121a;border-radius:16px;padding:12px;box-shadow:0 0 15px rgba(100,150,220,0.3)}
+    .vip-menu-btn{background:#202838;color:#e0ecfa;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease;box-shadow:0 0 10px rgba(140,190,255,0.35)}
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
 
     .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
-    .login-box{width:90%;max-width:360px;background:#10121a;border-radius:20px;padding:28px;box-shadow:0 0 15px rgba(80,120,200,0.12)}
+    .login-box{width:90%;max-width:360px;background:#10121a;border-radius:20px;padding:28px;box-shadow:0 0 18px rgba(100,150,220,0.25)}
     .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600;color:#c9d8f0}
     .login-box input{width:100%;padding:14px;border-radius:14px;border:none;background:#141824;color:#d0dcec;margin-bottom:16px;outline:none;transition:all 0.2s ease}
-    .login-box input:focus{background:#181e2b;box-shadow:0 0 6px rgba(120,160,230,0.2)}
+    .login-box input:focus{background:#181e2b;box-shadow:0 0 8px rgba(140,190,255,0.3)}
     .switch-txt{text-align:center;margin-top:18px;color:#6b7a95;font-size:14px}
     .switch-txt span{color:#82b1f0;cursor:pointer}
     .hide{display:none !important}
 
-    .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#96b8e8;font-size:14px;cursor:pointer;box-shadow:0 0 6px rgba(100,150,220,0.12)}
+    .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#e0ecfa;font-size:14px;cursor:pointer;box-shadow:0 0 10px rgba(120,180,240,0.3)}
     .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
   </style>
 </head>
@@ -291,7 +292,7 @@
     sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
-  // 气泡提亮 增强荧光发光 贴近你参考图
+  // 气泡高亮发光，和你参考图效果一致
   function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -307,14 +308,14 @@
     bubble.style.wordBreak = 'break-word';
 
     if(isMe){
-      bubble.style.background = '#23344f';
-      bubble.style.color = '#e0ecfa';
-      bubble.style.boxShadow = '0 0 14px rgba(140,190,255,0.35)';
+      bubble.style.background = 'linear-gradient(135deg, #2a456b, #3a5a85)';
+      bubble.style.color = '#eaf4ff';
+      bubble.style.boxShadow = '0 0 16px rgba(160,210,255,0.45), 0 0 30px rgba(160,210,255,0.25)';
       bubble.style.marginLeft = 'auto';
     }else{
-      bubble.style.background = '#1a273b';
-      bubble.style.color = '#d0dff5';
-      bubble.style.boxShadow = '0 0 14px rgba(110,160,230,0.3)';
+      bubble.style.background = 'linear-gradient(135deg, #203552, #2d4a6f)';
+      bubble.style.color = '#d8e8ff';
+      bubble.style.boxShadow = '0 0 16px rgba(130,190,255,0.4), 0 0 30px rgba(130,190,255,0.2)';
     }
     bubble.innerText = text;
 
@@ -341,10 +342,8 @@
   socket.on('waiting', () => status.innerText = '正在匹配...');
   socket.on('match_error', (t) => { alert(t); reset(); });
 
-  // 匹配成功：锁定匹配按钮 禁止再点
   socket.on('match_success', () => {
     status.innerText = '匹配成功';
-    // 关键：匹配成功直接禁用匹配按钮
     matchBtn.disabled = true;
     leave.disabled = false;
     msg.disabled = false;
@@ -352,11 +351,13 @@
     sendContact.disabled = true;
   });
 
-  // 修复对方收不到消息：正常渲染文本
+  // 双重保险，杜绝 [object Object]
   socket.on('new_message', (txt) => {
+    // 不管后端发来什么，强制转成字符串再渲染
+    const safeText = String(txt || '');
     if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
     otherMsgCount++;
-    addMsg(txt, false, otherMsgCount);
+    addMsg(safeText, false, otherMsgCount);
     checkContactBtn();
   });
 
