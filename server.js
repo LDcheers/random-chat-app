@@ -188,13 +188,13 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ 修复：消息只发给对方，不发给自己（解决重复）
+  // ✅ 修复：只发送纯文本消息，不再发对象！！！
   socket.on('send_message', (msg) => {
     const room = userChats[uid];
     if (!room) return;
-    socket.to(room).emit('new_message', { user: uid, msg: msg });
+    // 只发文字，不发对象！！！
+    socket.to(room).emit('new_message', msg);
 
-    // 恢复计数
     messageCount[room] = (messageCount[room] || 0) + 1;
     io.to(room).emit('chat_count', messageCount[room]);
   });
@@ -265,12 +265,3 @@ app.get('/admin/users', (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('运行正常'));
-
-
-
-
-
-
-
-
-
