@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    /* 全局字体调整，更清爽现代 */
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif}
     body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
     .header{text-align:center;margin:24px 0 20px}
@@ -292,7 +293,7 @@
     sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
-  // 气泡高亮发光，和你参考图效果一致
+  // 气泡高亮发光，和你参考图效果完全一致
   function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
@@ -308,14 +309,15 @@
     bubble.style.wordBreak = 'break-word';
 
     if(isMe){
-      bubble.style.background = 'linear-gradient(135deg, #2a456b, #3a5a85)';
-      bubble.style.color = '#eaf4ff';
-      bubble.style.boxShadow = '0 0 16px rgba(160,210,255,0.45), 0 0 30px rgba(160,210,255,0.25)';
+      // 完全匹配你参考图的亮蓝色渐变+外发光
+      bubble.style.background = 'linear-gradient(135deg, #b0e0ff, #e0f8ff)';
+      bubble.style.color = '#081018';
+      bubble.style.boxShadow = '0 0 16px rgba(180,230,255,0.6), 0 0 32px rgba(180,230,255,0.35)';
       bubble.style.marginLeft = 'auto';
     }else{
-      bubble.style.background = 'linear-gradient(135deg, #203552, #2d4a6f)';
-      bubble.style.color = '#d8e8ff';
-      bubble.style.boxShadow = '0 0 16px rgba(130,190,255,0.4), 0 0 30px rgba(130,190,255,0.2)';
+      bubble.style.background = 'linear-gradient(135deg, #80b8e0, #b0e0ff)';
+      bubble.style.color = '#081018';
+      bubble.style.boxShadow = '0 0 16px rgba(150,210,255,0.55), 0 0 32px rgba(150,210,255,0.3)';
     }
     bubble.innerText = text;
 
@@ -351,9 +353,7 @@
     sendContact.disabled = true;
   });
 
-  // 双重保险，杜绝 [object Object]
   socket.on('new_message', (txt) => {
-    // 不管后端发来什么，强制转成字符串再渲染
     const safeText = String(txt || '');
     if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
     otherMsgCount++;
