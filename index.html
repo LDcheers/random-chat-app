@@ -6,56 +6,61 @@
   <title>BlindTouch</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    body{background:#111;color:#fff;padding:16px;line-height:1.5}
+    /* 全局深黑底色 */
+    body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
     .header{text-align:center;margin:24px 0 20px}
-    .logo{font-size:28px;font-weight:700;color:#fff;letter-spacing:2px}
+    .logo{font-size:28px;font-weight:600;color:#c9d8f0;letter-spacing:2px}
 
-    .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#ff4080;color:#fff;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(255,64,128,0.15)}
-    .btn:active{transform:scale(0.98);opacity:0.92}
-    .btn:disabled{background:#333;color:#667;box-shadow:none;transform:none}
+    /* 按钮主色：低调浅蓝 */
+    .btn{width:100%;padding:15px;border-radius:16px;border:none;background:#202838;color:#b8d0f0;font-size:16px;font-weight:500;margin:10px 0;cursor:pointer;transition:all 0.2s ease;box-shadow:0 0 8px rgba(120,160,230,0.15)}
+    .btn:active{transform:scale(0.98);opacity:0.9}
+    .btn:disabled{background:#141820;color:#4a5568;box-shadow:none;transform:none}
 
-    .status{text-align:center;color:#aaa;margin:10px 0;font-size:15px}
-    .chat-box{height:460px;background:#1a1a1a;border-radius:18px;padding:16px;overflow-y:auto;margin:12px 0;box-shadow:inset 0 0 10px rgba(0,0,0,0.3)}
+    .status{text-align:center;color:#8998b3;margin:10px 0;font-size:15px}
+    /* 聊天框深色底 */
+    .chat-box{height:460px;background:#101218;border-radius:18px;padding:16px;overflow-y:auto;margin:12px 0;box-shadow:inset 0 0 12px rgba(0,0,0,0.6)}
     .chat-box::-webkit-scrollbar{width:4px}
-    .chat-box::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+    .chat-box::-webkit-scrollbar-thumb{background:#252c3a;border-radius:4px}
 
     .input-row{display:flex;gap:10px;margin-top:12px}
-    .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#222;color:#fff;outline:none;transition:all 0.2s ease}
-    .input-row input:focus{background:#252525;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
+    .input-row input{flex:1;padding:14px 16px;border-radius:16px;border:none;background:#141824;color:#d0dcec;outline:none;transition:all 0.2s ease}
+    .input-row input:focus{background:#181c28;box-shadow:0 0 6px rgba(120,160,230,0.2)}
 
-    .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#1e1e1e;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
-    .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#ddd}
-    .right-bar textarea{width:100px;height:100px;background:#2a2a2a;border:none;border-radius:10px;color:#fff;padding:8px;outline:none;resize:none;font-size:13px}
-    .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#ff4080;color:#fff;cursor:pointer}
+    /* 右侧联系方式栏 深色柔光 */
+    .right-bar{position:fixed;top:50%;right:10px;transform:translateY(-50%);width:140px;background:#10121a;border-radius:16px;padding:14px;box-shadow:0 0 10px rgba(100,140,220,0.12)}
+    .right-bar h4{text-align:center;margin-bottom:10px;font-size:14px;color:#a1b4d8}
+    .right-bar textarea{width:100px;height:100px;background:#141824;border:none;border-radius:10px;color:#c9d8f0;padding:8px;outline:none;resize:none;font-size:13px}
+    .bar-btn{width:100px;padding:6px;border-radius:8px;border:none;margin-top:8px;font-size:13px;background:#202838;color:#b8d0f0;cursor:pointer;box-shadow:0 0 6px rgba(120,160,230,0.15)}
     .bar-btn:active{opacity:0.9}
 
     .vip-group{margin-top:24px}
-    .vip-title{font-size:16px;margin-bottom:12px;color:#ddd}
-    .vip-item{background:#222;border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s ease}
-    .vip-item:active{background:#2a2a2a}
-    .vip-name{font-weight:500;margin-bottom:4px}
-    .vip-price{color:#ff4080;font-weight:500}
+    .vip-title{font-size:16px;margin-bottom:12px;color:#a1b4d8}
+    .vip-item{background:#141824;border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s ease}
+    .vip-item:active{background:#181e2b}
+    .vip-name{font-weight:500;margin-bottom:4px;color:#c9d8f0}
+    .vip-price{color:#82b1f0;font-weight:500}
 
-    .chat-number{font-size:11px;color:#999;margin-bottom:4px}
+    .chat-number{font-size:11px;color:#6b7a95;margin-bottom:4px}
 
     .vip-menu{position:absolute;top:10px;right:0;z-index:888}
-    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#222;border-radius:16px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
-    .vip-menu-btn{background:#ff4080;color:#fff;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease}
+    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#10121a;border-radius:16px;padding:12px;box-shadow:0 0 12px rgba(80,120,200,0.15)}
+    .vip-menu-btn{background:#202838;color:#b8d0f0;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease;box-shadow:0 0 6px rgba(120,160,230,0.15)}
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
 
-    .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:999}
-    .login-box{width:90%;max-width:360px;background:#1e1e1e;border-radius:20px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
-    .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600}
-    .login-box input{width:100%;padding:14px;border-radius:14px;border:none;background:#2a2a2a;color:#fff;margin-bottom:16px;outline:none;transition:all 0.2s ease}
-    .login-box input:focus{background:#2f2f2f;box-shadow:0 0 0 2px rgba(255,64,128,0.2)}
-    .switch-txt{text-align:center;margin-top:18px;color:#888;font-size:14px}
-    .switch-txt span{color:#ff4080;cursor:pointer}
+    .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
+    .login-box{width:90%;max-width:360px;background:#10121a;border-radius:20px;padding:28px;box-shadow:0 0 15px rgba(80,120,200,0.12)}
+    .login-box h3{text-align:center;margin-bottom:24px;font-size:20px;font-weight:600;color:#c9d8f0}
+    .login-box input{width:100%;padding:14px;border-radius:14px;border:none;background:#141824;color:#d0dcec;margin-bottom:16px;outline:none;transition:all 0.2s ease}
+    .login-box input:focus{background:#181e2b;box-shadow:0 0 6px rgba(120,160,230,0.2)}
+    .switch-txt{text-align:center;margin-top:18px;color:#6b7a95;font-size:14px}
+    .switch-txt span{color:#82b1f0;cursor:pointer}
     .hide{display:none !important}
 
-    .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#2288ff;color:#fff;font-size:14px;cursor:pointer}
-    .send-contact:disabled{background:#334;cursor:not-allowed}
+    /* 发送联系方式按钮 */
+    .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#96b8e8;font-size:14px;cursor:pointer;box-shadow:0 0 6px rgba(100,150,220,0.12)}
+    .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
   </style>
 </head>
 <body>
@@ -64,7 +69,7 @@
   <h4>我的联系方式</h4>
   <textarea id="contactTxt" placeholder="输入微信/QQ/手机号"></textarea>
   <button class="bar-btn" id="saveContact">保存</button>
-  <button class="bar-btn" id="clearContact" style="background:#444">清空</button>
+  <button class="bar-btn" id="clearContact" style="background:#141824">清空</button>
 </div>
 
 <div class="mask" id="mask">
@@ -100,7 +105,7 @@
   <div class="chat-box" id="chat"></div>
 
   <div class="input-row">
-    <input id="msg" placeholder="输入消息..." disabled>
+    <input id="msg" placeholder="输入消息..." maxlength="50" disabled>
     <button class="btn" id="send" disabled>发送</button>
     <button class="send-contact" id="sendContact" disabled>发送联系方式</button>
   </div>
@@ -119,6 +124,8 @@
   let otherMsgCount = 0;
   const MAX_SINGLE_LIMIT = 20;
   const NEED_MIN = 5;
+  // 单条消息最大字符
+  const MAX_CHAR = 50;
 
   const mask = document.getElementById('mask');
   const mainPage = document.getElementById('mainPage');
@@ -214,7 +221,7 @@
     }else{
       // 停止匹配 不扣次数
       matching = false;
-      socket.emit('stop_match');
+      socket.emit('cancel_match');
       reset();
     }
   };
@@ -222,7 +229,13 @@
   leave.onclick=()=>{socket.emit('leave_chat');reset();};
 
   send.onclick=()=>{
-    let t=msg.value.trim();if(!t)return;
+    let t=msg.value.trim();
+    if(!t)return;
+    // 字符校验
+    if(t.length > MAX_CHAR){
+      alert(`单条消息不能超过${MAX_CHAR}个字符`);
+      return;
+    }
     if(myMsgCount >= MAX_SINGLE_LIMIT){
       alert('你已达到本轮20句发言上限');
       return;
@@ -240,13 +253,19 @@
       alert('请先在右侧填写并保存你的联系方式');
       return;
     }
+    // 联系方式也限制50字符
+    let sendStr = '我的联系方式：' + cont;
+    if(sendStr.length > MAX_CHAR){
+      alert('联系方式过长，单条消息不能超过50个字符');
+      return;
+    }
     if(myMsgCount >= MAX_SINGLE_LIMIT){
       alert('你已达到本轮20句发言上限');
       return;
     }
     myMsgCount++;
-    addMsg('我的联系方式：' + cont, true, myMsgCount);
-    socket.emit('send_message', '我的联系方式：' + cont);
+    addMsg(sendStr, true, myMsgCount);
+    socket.emit('send_message', sendStr);
     checkContactBtn();
   };
 
@@ -254,31 +273,32 @@
     sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
   }
 
-  // 独立计数渲染气泡
+  // 独立计数渲染气泡 + 低调浅蓝柔光发光 对标你参考图效果
   function addMsg(text, isMe, count){
     let wrap = document.createElement('div');
     wrap.style.margin = '10px 0';
 
     let num = document.createElement('div');
     num.className = 'chat-number';
-    num.innerText = isMe ? `我第${count}句` : `对方第${count}句`;
+    num.innerText = `第${count}句`;
 
     let bubble = document.createElement('div');
     bubble.style.padding='12px 16px';
     bubble.style.borderRadius='18px';
     bubble.style.maxWidth='75%';
     bubble.style.wordBreak='break-word';
-    bubble.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
-    bubble.innerText = text;
-
+    // 低调微发光，不刺眼，和你给的set气泡质感一致
     if(isMe){
-      bubble.style.background='#ff4080';
-      bubble.style.color='#fff';
+      bubble.style.background='#1e2a3e';
+      bubble.style.color:#d0dcec;
+      bubble.style.boxShadow='0 0 10px rgba(130,175,240,0.25)';
       bubble.style.marginLeft='auto';
     }else{
-      bubble.style.background='#2a2a2a';
-      bubble.style.color='#fff';
+      bubble.style.background='#141c2b';
+      bubble.style.color:#c9d8f0;
+      bubble.style.boxShadow='0 0 10px rgba(100,140,210,0.2)';
     }
+    bubble.innerText = text;
 
     wrap.appendChild(num);
     wrap.appendChild(bubble);
@@ -312,6 +332,7 @@
   });
 
   socket.on('new_message',(txt)=>{
+    if(typeof txt !== 'string') return;
     if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
     otherMsgCount++;
     addMsg(txt, false, otherMsgCount);
