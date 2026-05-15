@@ -78,6 +78,18 @@
     .hide{display:none !important}
     .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#e0ecfa;font-size:14px;cursor:pointer;box-shadow:0 0 10px rgba(120,180,240,0.3)}
     .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
+
+    /* 底部法律常驻小字提示 */
+.legal-tip {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: #6b7a95;
+  line-height: 1.4;
+  padding: 10px 16px 20px;
+}
+  
+  
   </style>
 </head>
 <body>
@@ -412,6 +424,12 @@
       vipMenu.classList.remove('show');
     };
   });
+
+    <!-- 底部法律提示条 -->
+  <div class="legal-tip">
+    温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露个人隐私信息。
+  </div>
+  
 </script>
 </body>
 </html>
