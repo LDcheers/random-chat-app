@@ -140,7 +140,7 @@
     .vip-price{color:#82b1f0;font-weight:500}
     .chat-number{font-size:11px;color:#6b7a95;margin-bottom:4px}
 
-    /* 匹配中专用弹窗 */
+    /* 匹配中专用弹窗 简约格调版 */
     .match-modal{
       width: 90%;
       max-width: 320px;
@@ -149,10 +149,16 @@
       padding:30px 24px;
       text-align:center;
     }
-    .match-modal .tip-text{
-      font-size:18px;
+    .match-modal .main-tip{
+      font-size:20px;
       color:#c9d8f0;
-      margin-bottom:24px;
+      letter-spacing:2px;
+    }
+    .match-modal .sub-tip{
+      font-size:12px;
+      color:#6b7a95;
+      margin:6px 0 28px;
+      letter-spacing:1px;
     }
 
     /* 底部法律提示 */
@@ -180,10 +186,11 @@
   </div>
 </div>
 
-<!-- 匹配中弹窗 -->
+<!-- 匹配中弹窗 格调版 -->
 <div class="mask hide" id="matchMask">
   <div class="match-modal">
-    <div class="tip-text">正在为你匹配陌生人...</div>
+    <div class="main-tip">正在匹配</div>
+    <div class="sub-tip">Touching</div>
     <button class="btn" id="cancelMatchBtn">取消匹配</button>
   </div>
 </div>
@@ -205,7 +212,7 @@
 
   <div class="status" id="left">免费次数：3</div>
 
-  <!-- 初始界面按钮 -->
+  <!-- 初始界面按钮 匹配成功后隐藏 -->
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
 
@@ -372,6 +379,9 @@
   // 匹配成功
   socket.on('match_success', () => {
     matchMask.classList.add('hide');
+    // 隐藏初始两个按钮
+    matchBtn.classList.add('hide');
+    saveContactBtn.classList.add('hide');
     // 展示聊天界面
     chat.classList.remove('hide');
     chatInputRow.classList.remove('hide');
@@ -404,6 +414,9 @@
     chat.innerHTML = '';
     myMsgCount = 0;
     otherMsgCount = 0;
+    // 重新显示初始按钮
+    matchBtn.classList.remove('hide');
+    saveContactBtn.classList.remove('hide');
     // 隐藏聊天相关
     chat.classList.add('hide');
     chatInputRow.classList.add('hide');
