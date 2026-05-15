@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
-  <!-- 思源黑体 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Noto Sans SC',sans-serif}
     body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
 
-    /* 标题LOGO飞入动画 */
     .header{
       text-align:center;
       margin:24px 0 20px;
@@ -80,7 +78,7 @@
     .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#e0ecfa;font-size:14px;cursor:pointer;box-shadow:0 0 10px rgba(120,180,240,0.3)}
     .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
 
-    /* 底部常驻法律小字提示 */
+    /* 底部法律提示 */
     .legal-tip {
       width: 100%;
       text-align: center;
@@ -140,7 +138,6 @@
   </div>
 </div>
 
-<!-- 底部常驻法律提示 已加好 -->
 <div class="legal-tip">
   温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露个人隐私信息，注意自我保护。
 </div>
@@ -266,7 +263,10 @@
     let res = await fetch('/getAccountUser?username=' + un);
     let data = await res.json();
     let isVip = data.expireTime > Date.now();
-    left.innerText = `免费次数：${data.freeTimes} ${isVip ? '（已开通会员）' : ''}`;
+    
+    // 修复 undefined 问题
+    let freeCount = data.freeToday || data.freeTimes || 3;
+    left.innerText = `免费次数：${freeCount} ${isVip ? '（已开通会员）' : ''}`;
   }
 
   matchBtn.onclick = () => {
