@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BlindTouch</title>
+  <!-- 思源黑体 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Noto Sans SC',sans-serif}
     body{background:#08080a;color:#e6edf7;padding:16px;line-height:1.5}
     .container{max-width:420px;margin:0 auto;position:relative}
 
+    /* 标题LOGO飞入动画 */
     .header{
       text-align:center;
       margin:24px 0 20px;
@@ -22,12 +24,11 @@
       animation: logoFlyIn 1.1s 0.2s ease forwards;
     }
 
-    /* 猫咪LOGO容器 */
     .page-logo{
-      width:36px;
-      height:36px;
-      display:block;
-      filter:drop-shadow(0 0 10px #82b1f0);
+      width:40px;
+      height:40px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 12px #40b8ff);
     }
 
     .logo-text{
@@ -79,17 +80,15 @@
     .send-contact{padding:14px 10px;border-radius:16px;border:none;background:#1a2230;color:#e0ecfa;font-size:14px;cursor:pointer;box-shadow:0 0 10px rgba(120,180,240,0.3)}
     .send-contact:disabled{background:#12161e;color:#3a475e;cursor:not-allowed;box-shadow:none}
 
-    /* 底部法律常驻小字提示 */
-.legal-tip {
-  width: 100%;
-  text-align: center;
-  font-size: 11px;
-  color: #6b7a95;
-  line-height: 1.4;
-  padding: 10px 16px 20px;
-}
-  
-  
+    /* 底部常驻法律小字提示 */
+    .legal-tip {
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: #6b7a95;
+      line-height: 1.4;
+      padding: 12px 16px 10px;
+    }
   </style>
 </head>
 <body>
@@ -112,15 +111,13 @@
 </div>
 
 <div class="container" id="mainPage" class="hide">
-  
- <!-- 你的本地图片LOGO -->
-<div class="header">
-  <img class="page-logo" src="logo.png" alt="LOGO">
-  <div class="logo-text">Blind Touch</div>
-</div>
+  <div class="header">
+    <img class="page-logo" src="logo.png" alt="BlindTouch LOGO">
+    <div class="logo-text">Blind Touch</div>
+  </div>
 
   <div class="vip-menu" id="vipMenu">
-    <button class="vip-menu-btn" id="vipBtn"> 充值</button>
+    <button class="vip-menu-btn" id="vipBtn">💎 充值</button>
     <div class="vip-dropdown">
       <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
       <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
@@ -141,6 +138,11 @@
     <button class="btn" id="send" disabled>发送</button>
     <button class="send-contact" id="sendContact" disabled>发送联系方式</button>
   </div>
+</div>
+
+<!-- 底部常驻法律提示 已加好 -->
+<div class="legal-tip">
+  温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露个人隐私信息，注意自我保护。
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -264,7 +266,7 @@
     let res = await fetch('/getAccountUser?username=' + un);
     let data = await res.json();
     let isVip = data.expireTime > Date.now();
-    left.innerText = `免费次数：${data.freeToday} ${isVip ? '（已开通会员）' : ''}`;
+    left.innerText = `免费次数：${data.freeTimes} ${isVip ? '（已开通会员）' : ''}`;
   }
 
   matchBtn.onclick = () => {
@@ -289,11 +291,11 @@
     let t = msg.value.trim();
     if(!t) return;
     if(t.length > MAX_CHAR){
-      alert(`单条消息不能超过${MAX_CHAR}个字符`);
+      alert(`单条消息不能超过${MAX_CHAR}个字`);
       return;
     }
     if(myMsgCount >= MAX_SINGLE_LIMIT){
-      alert('你已达到本轮20句发言上限');
+      alert('已达到本轮发送上限');
       return;
     }
     myMsgCount++;
@@ -306,21 +308,16 @@
   sendContact.onclick = () => {
     let cont = localStorage.getItem('myContact') || '';
     if(!cont){
-      alert('请先在右侧填写并保存你的联系方式');
-      return;
-    }
-    let sendStr = '我的联系方式：' + cont;
-    if(sendStr.length > MAX_CHAR){
-      alert('联系方式过长，单条消息不能超过50个字符');
+      alert('请先在右侧填写并保存联系方式');
       return;
     }
     if(myMsgCount >= MAX_SINGLE_LIMIT){
-      alert('你已达到本轮20句发言上限');
+      alert('已达到本轮发送上限');
       return;
     }
     myMsgCount++;
-    addMsg(sendStr, true, myMsgCount);
-    socket.emit('send_message', sendStr);
+    addMsg(cont, true, myMsgCount);
+    socket.emit('send_message', cont);
     checkContactBtn();
   };
 
@@ -395,7 +392,7 @@
   });
 
   socket.on('chat_end', () => { alert('对方已离开'); reset(); });
-  socket.on('user_leave', () => { alert('对方断开'); reset(); });
+  socket.on('user_leave', () => { alert('对方断开连接'); reset(); });
   socket.on('left_count', (n) => left.innerText = '免费次数：' + n);
 
   document.querySelectorAll('.vip-item').forEach(item => {
@@ -424,12 +421,6 @@
       vipMenu.classList.remove('show');
     };
   });
-
-    <!-- 底部法律提示条 -->
-  <div class="legal-tip">
-    温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露个人隐私信息。
-  </div>
-  
 </script>
 </body>
 </html>
