@@ -48,6 +48,14 @@
       to {opacity:1;transform:translateX(0);}
     }
 
+    /* 首页主动画容器 */
+    .home-animate-box{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 30px 0;
+    }
+
     .btn{
       width:100%;
       padding:14px;
@@ -102,7 +110,6 @@
     }
     .input-row input:focus{background:#181c28;box-shadow:0 0 8px rgba(140,190,255,0.3)}
 
-    /* 手机端隐藏右侧栏 */
     .right-bar{display: none;}
 
     .vip-menu{position:absolute;top:10px;right:0;z-index:888}
@@ -111,7 +118,6 @@
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
 
-    /* 全局遮罩弹窗 */
     .mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999}
     .login-box{width:90%;max-width:340px;background:#10121a;border-radius:20px;padding:24px;box-shadow:0 0 18px rgba(100,150,220,0.25)}
     .login-box h3{text-align:center;margin-bottom:20px;font-size:18px;font-weight:600;color:#c9d8f0}
@@ -140,7 +146,6 @@
     .vip-price{color:#82b1f0;font-weight:500}
     .chat-number{font-size:11px;color:#6b7a95;margin-bottom:4px}
 
-    /* 匹配中专用弹窗 简约格调版 */
     .match-modal{
       width: 90%;
       max-width: 320px;
@@ -161,7 +166,6 @@
       letter-spacing:1px;
     }
 
-    /* 底部法律提示 */
     .legal-tip {
       width: 100%;
       text-align: center;
@@ -175,7 +179,6 @@
 </head>
 <body>
 
-<!-- 登录弹窗 -->
 <div class="mask" id="loginMask">
   <div class="login-box">
     <h3 id="winTitle">登录</h3>
@@ -186,7 +189,6 @@
   </div>
 </div>
 
-<!-- 匹配中弹窗 格调版 -->
 <div class="mask hide" id="matchMask">
   <div class="match-modal">
     <div class="main-tip">正在匹配</div>
@@ -210,13 +212,21 @@
     </div>
   </div>
 
-  <div class="status" id="left">免费次数：3</div>
+  <!-- 首页居中循环动画 -->
+  <div class="home-animate-box">
+    <svg width="90" height="90" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="10" fill="#82b1f0" filter="drop-shadow(0 0 8px #40b8ff)">
+        <animate attributeName="r" values="10;18;10" dur="1.6s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="1.6s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  </div>
 
-  <!-- 初始界面按钮 匹配成功后隐藏 -->
+  <!-- 全部内容下移至动画下方 -->
+  <div class="status" id="left">免费次数：3</div>
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
 
-  <!-- 聊天区域 初始隐藏 -->
   <div class="chat-box hide" id="chat"></div>
   <div class="input-row hide" id="chatInputRow">
     <input id="msg" placeholder="输入消息..." maxlength="50" disabled>
@@ -244,7 +254,6 @@
   const NEED_MIN = 5;
   const MAX_CHAR = 50;
 
-  // 登录相关
   const loginMask = document.getElementById('loginMask');
   const winTitle = document.getElementById('winTitle');
   const submitBtn = document.getElementById('submitBtn');
@@ -253,25 +262,21 @@
   const usernameInp = document.getElementById('username');
   const pwdInp = document.getElementById('pwd');
 
-  // 匹配弹窗
   const matchMask = document.getElementById('matchMask');
   const cancelMatchBtn = document.getElementById('cancelMatchBtn');
 
-  // 主页元素
   const mainPage = document.getElementById('mainPage');
   const left = document.getElementById('left');
   const matchBtn = document.getElementById('matchBtn');
   const saveContactBtn = document.getElementById('saveContactBtn');
   const leaveBtn = document.getElementById('leaveBtn');
 
-  // 聊天相关
   const chat = document.getElementById('chat');
   const chatInputRow = document.getElementById('chatInputRow');
   const msg = document.getElementById('msg');
   const send = document.getElementById('send');
   const sendContact = document.getElementById('sendContact');
 
-  // 会员菜单
   const vipMenu = document.getElementById('vipMenu');
   const vipBtn = document.getElementById('vipBtn');
   
@@ -284,7 +289,6 @@
     }
   });
 
-  // 预存联系方式
   saveContactBtn.onclick = function(){
     let cont = prompt("请输入你的微信/QQ/手机号：");
     if(cont && cont.trim()){
@@ -356,33 +360,27 @@
     left.innerText = `免费次数：${freeCount} ${isVip ? '（已开通会员）' : ''}`;
   }
 
-  // 开始匹配
   matchBtn.onclick = () => {
     matching = true;
     matchMask.classList.remove('hide');
     socket.emit('start_match');
   };
 
-  // 取消匹配
   cancelMatchBtn.onclick = () => {
     matching = false;
     matchMask.classList.add('hide');
     socket.emit('cancel_match');
   };
 
-  // 离开对话
   leaveBtn.onclick = () => {
     socket.emit('leave_chat');
     resetChatUI();
   };
 
-  // 匹配成功
   socket.on('match_success', () => {
     matchMask.classList.add('hide');
-    // 隐藏初始两个按钮
     matchBtn.classList.add('hide');
     saveContactBtn.classList.add('hide');
-    // 展示聊天界面
     chat.classList.remove('hide');
     chatInputRow.classList.remove('hide');
     leaveBtn.classList.remove('hide');
@@ -414,10 +412,8 @@
     chat.innerHTML = '';
     myMsgCount = 0;
     otherMsgCount = 0;
-    // 重新显示初始按钮
     matchBtn.classList.remove('hide');
     saveContactBtn.classList.remove('hide');
-    // 隐藏聊天相关
     chat.classList.add('hide');
     chatInputRow.classList.add('hide');
     leaveBtn.classList.add('hide');
@@ -490,7 +486,6 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // 会员下单
   document.querySelectorAll('.vip-item').forEach(item => {
     item.onclick = async () => {
       let price = item.dataset.price;
