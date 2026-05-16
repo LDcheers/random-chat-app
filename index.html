@@ -48,12 +48,20 @@
       to {opacity:1;transform:translateX(0);}
     }
 
-    /* 首页主动画容器 */
-    .home-animate-box{
+    /* 视频容器：居中 + 超大尺寸 */
+    .video-container {
+      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 30px 0;
+      margin: 20px 0 30px;
+    }
+
+    .main-video {
+      width: 85%;
+      max-width: 320px;
+      border-radius: 20px;
+      object-fit: cover;
     }
 
     .btn{
@@ -169,16 +177,17 @@
     .legal-tip {
       width: 100%;
       text-align: center;
-      font-size: 11px;
-      color: #6b7a95;
-      line-height: 1.4;
-      padding: 10px 16px 20px;
-      margin-top: 30px;
+      font-size:11px;
+      color:#6b7a95;
+      line-height:1.4;
+      padding:10px 16px 20px;
+      margin-top:30px;
     }
   </style>
 </head>
 <body>
 
+<!-- 登录弹窗 -->
 <div class="mask" id="loginMask">
   <div class="login-box">
     <h3 id="winTitle">登录</h3>
@@ -189,6 +198,7 @@
   </div>
 </div>
 
+<!-- 匹配弹窗 -->
 <div class="mask hide" id="matchMask">
   <div class="match-modal">
     <div class="main-tip">正在匹配</div>
@@ -212,21 +222,19 @@
     </div>
   </div>
 
-  <!-- 首页居中循环动画 -->
-  <div class="home-animate-box">
-    <svg width="90" height="90" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="10" fill="#82b1f0" filter="drop-shadow(0 0 8px #40b8ff)">
-        <animate attributeName="r" values="10;18;10" dur="1.6s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.6;1;0.6" dur="1.6s" repeatCount="indefinite" />
-      </circle>
-    </svg>
+  <!-- 主界面视频（自动播放、循环、静音、居中超大） -->
+  <div class="video-container" id="homeVideo">
+    <video class="main-video" autoplay loop muted playsinline>
+      <source src="loading.mp4" type="video/mp4">
+    </video>
   </div>
 
-  <!-- 全部内容下移至动画下方 -->
+  <!-- 所有内容在视频下方 -->
   <div class="status" id="left">免费次数：3</div>
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
 
+  <!-- 聊天区域（初始隐藏） -->
   <div class="chat-box hide" id="chat"></div>
   <div class="input-row hide" id="chatInputRow">
     <input id="msg" placeholder="输入消息..." maxlength="50" disabled>
@@ -238,7 +246,7 @@
 </div>
 
 <div class="legal-tip">
-  温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露个人隐私信息，注意自我保护。
+  温馨提示：所有聊天内容由用户自行负责，请合法合规交流；请勿向陌生人泄露隐私信息，注意自我保护。
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -255,105 +263,77 @@
   const MAX_CHAR = 50;
 
   const loginMask = document.getElementById('loginMask');
-  const winTitle = document.getElementById('winTitle');
-  const submitBtn = document.getElementById('submitBtn');
-  const switchBtn = document.getElementById('switchBtn');
-  const switchTxt = document.getElementById('switchTxt');
-  const usernameInp = document.getElementById('username');
-  const pwdInp = document.getElementById('pwd');
-
   const matchMask = document.getElementById('matchMask');
   const cancelMatchBtn = document.getElementById('cancelMatchBtn');
-
   const mainPage = document.getElementById('mainPage');
   const left = document.getElementById('left');
   const matchBtn = document.getElementById('matchBtn');
   const saveContactBtn = document.getElementById('saveContactBtn');
   const leaveBtn = document.getElementById('leaveBtn');
-
   const chat = document.getElementById('chat');
   const chatInputRow = document.getElementById('chatInputRow');
   const msg = document.getElementById('msg');
   const send = document.getElementById('send');
   const sendContact = document.getElementById('sendContact');
-
   const vipMenu = document.getElementById('vipMenu');
-  const vipBtn = document.getElementById('vipBtn');
-  
-  vipBtn.onclick = () => {
-    vipMenu.classList.toggle('show');
-  };
-  document.addEventListener('click',(e)=>{
-    if(!vipMenu.contains(e.target)){
-      vipMenu.classList.remove('show');
-    }
-  });
+
+  // 视频元素
+  const homeVideo = document.getElementById('homeVideo');
+
+  vipMenu.onclick = () => vipMenu.classList.toggle('show');
+  document.addEventListener('click',(e)=>{ if(!vipMenu.contains(e.target)) vipMenu.classList.remove('show'); });
 
   saveContactBtn.onclick = function(){
-    let cont = prompt("请输入你的微信/QQ/手机号：");
+    let cont = prompt("请输入微信/QQ/手机号：");
     if(cont && cont.trim()){
       localStorage.setItem('myContact', cont.trim());
-      alert("联系方式预存成功");
+      alert("预存成功");
     }
   };
 
   window.onload = function(){
     let user = localStorage.getItem('btUser');
-    if(user){ enterMain(JSON.parse(user).username); }
+    if(user) enterMain(JSON.parse(user).username);
   };
 
-  switchBtn.onclick = function(){
+  document.getElementById('switchBtn').onclick = function(){
     if(nowMode === "login"){
       nowMode = "reg";
-      winTitle.innerText = "注册账号";
-      submitBtn.innerText = "立即注册";
-      switchTxt.innerHTML = "已有账号？<span id='switchBtn'>去登录</span>";
-      document.getElementById('switchBtn').onclick = switchBtn.onclick;
+      document.getElementById('winTitle').innerText = "注册账号";
+      document.getElementById('submitBtn').innerText = "立即注册";
+      document.getElementById('switchTxt').innerHTML = "已有账号？<span id='switchBtn'>去登录</span>";
     }else{
       nowMode = "login";
-      winTitle.innerText = "登录";
-      submitBtn.innerText = "立即登录";
-      switchTxt.innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
-      document.getElementById('switchBtn').onclick = switchBtn.onclick;
+      document.getElementById('winTitle').innerText = "登录";
+      document.getElementById('submitBtn').innerText = "立即登录";
+      document.getElementById('switchTxt').innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
     }
   };
 
-  submitBtn.onclick = async function(){
-    let un = usernameInp.value.trim();
-    let pd = pwdInp.value.trim();
-    if(!un || !pd){
-      alert('账号和密码不能为空');
-      return;
-    }
-    let url = nowMode === "reg" ? '/register' : '/login';
-    let res = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: un, password: pd})
+  document.getElementById('submitBtn').onclick = async function(){
+    let un = document.getElementById('username').value.trim();
+    let pd = document.getElementById('pwd').value.trim();
+    if(!un || !pd) return alert('账号密码不能为空');
+    let res = await fetch(nowMode === "reg" ? '/register' : '/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username:un,password:pd})
     });
     let data = await res.json();
-    if(data.code !== 0){
-      alert(data.msg || '操作失败');
-      return;
-    }
-    if(nowMode === "login"){
-      loginUsername = un;
-      localStorage.setItem('btUser', JSON.stringify({username: un}));
-      enterMain(un);
+    if(data.code!==0) return alert(data.msg);
+    if(nowMode==="login"){
+      loginUsername=un; localStorage.setItem('btUser',JSON.stringify({username:un})); enterMain(un);
     }else{
-      alert('注册成功，请登录');
-      nowMode = "login";
-      winTitle.innerText = "登录";
-      submitBtn.innerText = "立即登录";
-      switchTxt.innerHTML = "没有账号？<span id='switchBtn'>去注册</span>";
-      document.getElementById('switchBtn').onclick = switchBtn.onclick;
+      alert("注册成功，请登录");
+      nowMode="login"; document.getElementById('winTitle').innerText="登录";
+      document.getElementById('submitBtn').innerText="立即登录";
+      document.getElementById('switchTxt').innerHTML="没有账号？<span id='switchBtn'>去注册</span>";
     }
   };
 
   async function enterMain(un){
     loginMask.classList.add('hide');
     mainPage.classList.remove('hide');
-    let res = await fetch('/getAccountUser?username=' + un);
+    let res = await fetch('/getAccountUser?username='+un);
     let data = await res.json();
     let isVip = data.expireTime > Date.now();
     let freeCount = data.freeToday || data.freeTimes || 3;
@@ -361,155 +341,75 @@
   }
 
   matchBtn.onclick = () => {
-    matching = true;
-    matchMask.classList.remove('hide');
-    socket.emit('start_match');
+    matching=true; matchMask.classList.remove('hide'); socket.emit('start_match');
   };
 
   cancelMatchBtn.onclick = () => {
-    matching = false;
-    matchMask.classList.add('hide');
-    socket.emit('cancel_match');
+    matching=false; matchMask.classList.add('hide'); socket.emit('cancel_match');
   };
 
   leaveBtn.onclick = () => {
-    socket.emit('leave_chat');
-    resetChatUI();
+    socket.emit('leave_chat'); resetChatUI();
   };
 
   socket.on('match_success', () => {
     matchMask.classList.add('hide');
+    // 匹配成功 → 隐藏视频 + 隐藏主按钮
+    homeVideo.classList.add('hide');
     matchBtn.classList.add('hide');
     saveContactBtn.classList.add('hide');
+    
+    // 显示聊天
     chat.classList.remove('hide');
     chatInputRow.classList.remove('hide');
     leaveBtn.classList.remove('hide');
     msg.disabled = false;
     send.disabled = false;
-    sendContact.disabled = true;
   });
 
-  socket.on('match_error', (t) => { 
-    alert(t); 
-    matching = false;
-    matchMask.classList.add('hide');
-  });
-
-  socket.on('new_message', (txt) => {
-    const safeText = String(txt || '');
-    if(otherMsgCount >= MAX_SINGLE_LIMIT) return;
-    otherMsgCount++;
-    addMsg(safeText, false, otherMsgCount);
-    checkContactBtn();
-  });
-
-  socket.on('chat_end', () => { alert('对方已离开'); resetChatUI(); });
-  socket.on('user_leave', () => { alert('对方断开连接'); resetChatUI(); });
-  socket.on('left_count', (n) => left.innerText = '免费次数：' + n);
+  socket.on('match_error', (t)=>{ alert(t); matching=false; matchMask.classList.add('hide'); });
+  socket.on('chat_end', ()=>{ alert('对方已离开'); resetChatUI(); });
+  socket.on('user_leave', ()=>{ alert('对方断开'); resetChatUI(); });
+  socket.on('left_count', (n)=>{ left.innerText='免费次数：'+n; });
 
   function resetChatUI(){
-    matching = false;
-    chat.innerHTML = '';
-    myMsgCount = 0;
-    otherMsgCount = 0;
+    matching=false; chat.innerHTML=''; myMsgCount=0; otherMsgCount=0;
+    // 退出聊天 → 重新显示视频
+    homeVideo.classList.remove('hide');
     matchBtn.classList.remove('hide');
     saveContactBtn.classList.remove('hide');
+
     chat.classList.add('hide');
     chatInputRow.classList.add('hide');
     leaveBtn.classList.add('hide');
-    msg.value = '';
+    msg.value='';
   }
 
-  function checkContactBtn(){
-    sendContact.disabled = (myMsgCount + otherMsgCount) < NEED_MIN;
-  }
-
-  send.onclick = () => {
-    let t = msg.value.trim();
-    if(!t) return;
-    if(t.length > MAX_CHAR){
-      alert(`单条消息不能超过${MAX_CHAR}个字`);
-      return;
-    }
-    if(myMsgCount >= MAX_SINGLE_LIMIT){
-      alert('已达到本轮发送上限');
-      return;
-    }
-    myMsgCount++;
-    addMsg(t, true, myMsgCount);
-    socket.emit('send_message', t);
-    msg.value = '';
-    checkContactBtn();
+  send.onclick=()=>{
+    let t=msg.value.trim(); if(!t) return;
+    myMsgCount++; addMsg(t,true,myMsgCount); socket.emit('send_message',t); msg.value='';
   };
-
-  sendContact.onclick = () => {
-    let cont = localStorage.getItem('myContact') || '';
-    if(!cont){
-      alert('请先点击预存联系方式填写');
-      return;
-    }
-    if(myMsgCount >= MAX_SINGLE_LIMIT){
-      alert('已达到本轮发送上限');
-      return;
-    }
-    myMsgCount++;
-    addMsg(cont, true, myMsgCount);
-    socket.emit('send_message', cont);
-    checkContactBtn();
+  sendContact.onclick=()=>{
+    let c=localStorage.getItem('myContact'); if(!c) return alert('请先预存联系方式');
+    myMsgCount++; addMsg(c,true,myMsgCount); socket.emit('send_message',c);
   };
-
-  function addMsg(text, isMe, count){
-    let wrap = document.createElement('div');
-    wrap.style.margin = '10px 0';
-    let num = document.createElement('div');
-    num.className = 'chat-number';
-    num.innerText = `第${count}句`;
-    let bubble = document.createElement('div');
-    bubble.style.padding = '12px 16px';
-    bubble.style.borderRadius = '18px';
-    bubble.style.maxWidth = '75%';
-    bubble.style.wordBreak = 'break-word';
-    if(isMe){
-      bubble.style.background = 'linear-gradient(135deg, #b0e0ff, #e0f8ff)';
-      bubble.style.color = '#081018';
-      bubble.style.boxShadow = '0 0 16px rgba(180,230,255,0.6), 0 0 32px rgba(180,230,255,0.35)';
-      bubble.style.marginLeft = 'auto';
-    }else{
-      bubble.style.background = 'linear-gradient(135deg, #80b8e0, #b0e0ff)';
-      bubble.style.color = '#081018';
-      bubble.style.boxShadow = '0 0 16px rgba(150,210,255,0.55), 0 0 32px rgba(150,210,255,0.3)';
-    }
-    bubble.innerText = text;
-    wrap.appendChild(num);
-    wrap.appendChild(bubble);
-    chat.appendChild(wrap);
-    chat.scrollTop = chat.scrollHeight;
+  function addMsg(t,isMe,idx){
+    let w=document.createElement('div'); w.style.margin='10px 0';
+    let num=document.createElement('div'); num.className='chat-number'; num.innerText=`第${idx}句`;
+    let b=document.createElement('div'); b.style.padding='12px 16px'; b.style.borderRadius='18px';
+    b.style.maxWidth='75%'; b.style.wordBreak='break-word';
+    if(isMe){ b.style.background='linear-gradient(135deg,#b0e0ff,#e0f8ff)'; b.style.color='#081018'; b.style.marginLeft='auto'; }
+    else{ b.style.background='linear-gradient(135deg,#80b8e0,#b0e0ff)'; b.style.color='#081018'; }
+    b.innerText=t; w.appendChild(num); w.appendChild(b); chat.appendChild(w); chat.scrollTop=chat.scrollHeight;
   }
 
-  document.querySelectorAll('.vip-item').forEach(item => {
-    item.onclick = async () => {
-      let price = item.dataset.price;
-      let res = await fetch('/create-order', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({userId: loginUsername, price})
-      });
-      let data = await res.json();
-      let f = document.createElement('form');
-      f.method = 'POST';
-      f.action = data.formUrl;
-      f.target = '_blank';
-      for(let k in data.formData){
-        let i = document.createElement('input');
-        i.type = 'hidden';
-        i.name = k;
-        i.value = data.formData[k];
-        f.appendChild(i);
-      }
-      document.body.appendChild(f);
-      f.submit();
-      setTimeout(() => f.remove(), 500);
-      vipMenu.classList.remove('show');
+  document.querySelectorAll('.vip-item').forEach(i=>{
+    i.onclick=async()=>{
+      let p=i.dataset.price;
+      let res=await fetch('/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:loginUsername,price:p})});
+      let d=await res.json(); let f=document.createElement('form'); f.method='POST'; f.action=d.formUrl; f.target='_blank';
+      for(let k in d.formData){ let i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=d.formData[k]; f.appendChild(i); }
+      document.body.appendChild(f); f.submit(); setTimeout(()=>f.remove(),500); vipMenu.classList.remove('show');
     };
   });
 </script>
