@@ -29,7 +29,6 @@
       animation: logoFlyIn 1.1s 0.2s ease forwards;
     }
 
-    /* LOGO微调 弱化硬边 统一色调 */
     .page-logo{
       width:36px;
       height:36px;
@@ -51,30 +50,27 @@
       to {opacity:1;transform:translateX(0);}
     }
 
-    /* 视频外层容器 虚化融合核心 */
+    /* 视频外层容器 */
     .video-container {
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 20px 0 30px;
-      padding:12px;
       background-color: #08080a;
       border-radius:24px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 0 25px rgba(0,0,0,0.6), inset 0 0 15px rgba(64,184,255,0.08);
     }
 
-    /* 视频本体 消除硬边框 边缘柔化 */
+    /* 方案四 同底色漫射虚化边框 */
     .main-video {
       width: 85%;
       max-width: 320px;
       border-radius:20px;
       object-fit: cover;
-      /* 边缘模糊过渡 */
-      box-shadow: 0 0 18px rgba(0,0,0,0.7), 0 0 8px rgba(64,184,255,0.15);
-      opacity:0.96;
+      box-shadow: 
+        0 0 20px #08080a,
+        0 0 40px #08080a,
+        0 0 60px rgba(8,8,10,0.9);
     }
 
     .btn{
@@ -200,7 +196,6 @@
 </head>
 <body>
 
-<!-- 登录弹窗 -->
 <div class="mask" id="loginMask">
   <div class="login-box">
     <h3 id="winTitle">登录</h3>
@@ -211,7 +206,6 @@
   </div>
 </div>
 
-<!-- 匹配弹窗 -->
 <div class="mask hide" id="matchMask">
   <div class="match-modal">
     <div class="main-tip">正在匹配</div>
@@ -235,19 +229,16 @@
     </div>
   </div>
 
-  <!-- 主界面视频 已做虚化融合处理 -->
   <div class="video-container" id="homeVideo">
     <video class="main-video" autoplay loop muted playsinline>
       <source src="loading.mp4" type="video/mp4">
     </video>
   </div>
 
-  <!-- 所有内容在视频下方 -->
   <div class="status" id="left">免费次数：3</div>
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
 
-  <!-- 聊天区域（初始隐藏） -->
   <div class="chat-box hide" id="chat"></div>
   <div class="input-row hide" id="chatInputRow">
     <input id="msg" placeholder="输入消息..." maxlength="50" disabled>
@@ -289,8 +280,6 @@
   const send = document.getElementById('send');
   const sendContact = document.getElementById('sendContact');
   const vipMenu = document.getElementById('vipMenu');
-
-  // 视频元素
   const homeVideo = document.getElementById('homeVideo');
 
   vipMenu.onclick = () => vipMenu.classList.toggle('show');
@@ -367,12 +356,9 @@
 
   socket.on('match_success', () => {
     matchMask.classList.add('hide');
-    // 匹配成功 → 隐藏视频 + 隐藏主按钮
     homeVideo.classList.add('hide');
     matchBtn.classList.add('hide');
     saveContactBtn.classList.add('hide');
-    
-    // 显示聊天
     chat.classList.remove('hide');
     chatInputRow.classList.remove('hide');
     leaveBtn.classList.remove('hide');
@@ -387,11 +373,9 @@
 
   function resetChatUI(){
     matching=false; chat.innerHTML=''; myMsgCount=0; otherMsgCount=0;
-    // 退出聊天 → 重新显示视频
     homeVideo.classList.remove('hide');
     matchBtn.classList.remove('hide');
     saveContactBtn.classList.remove('hide');
-
     chat.classList.add('hide');
     chatInputRow.classList.add('hide');
     leaveBtn.classList.add('hide');
