@@ -33,9 +33,7 @@
       width:36px;
       height:36px;
       object-fit:contain;
-      filter:drop-shadow(0 0 14px #40b8ff) brightness(1.05);
-      border-radius:8px;
-      background:transparent;
+      filter:drop-shadow(0 0 12px #40b8ff);
     }
 
     .logo-text{
@@ -50,27 +48,20 @@
       to {opacity:1;transform:translateX(0);}
     }
 
-    /* 视频外层容器 */
+    /* 恢复原始视频样式 无任何特效 */
     .video-container {
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 20px 0 30px;
-      background-color: #08080a;
-      border-radius:24px;
     }
 
-    /* 方案四 同底色漫射虚化边框 */
     .main-video {
       width: 85%;
       max-width: 320px;
-      border-radius:20px;
+      border-radius: 20px;
       object-fit: cover;
-      box-shadow: 
-        0 0 20px #08080a,
-        0 0 40px #08080a,
-        0 0 60px rgba(8,8,10,0.9);
     }
 
     .btn{
