@@ -19,7 +19,7 @@
 
     .header{
       text-align:center;
-      margin:20px 0 16px;
+      margin:20px 0 6px;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -44,11 +44,20 @@
       white-space:nowrap;
     }
 
+    /* 副标题：在黑暗中相遇 */
+    .subtitle {
+      text-align:center;
+      font-size:13px;
+      color:#8998b3;
+      margin-bottom:20px;
+      letter-spacing:0.5px;
+      opacity:0.85;
+    }
+
     @keyframes logoFlyIn {
       to {opacity:1;transform:translateX(0);}
     }
 
-    /* 恢复原始视频样式 无任何特效 */
     .video-container {
       width: 100%;
       display: flex;
@@ -120,9 +129,32 @@
 
     .right-bar{display: none;}
 
-    .vip-menu{position:absolute;top:10px;right:0;z-index:888}
-    .vip-dropdown{display:none;position:absolute;top:42px;right:0;width:180px;background:#10121a;border-radius:16px;padding:12px;box-shadow:0 0 15px rgba(100,150,220,0.3)}
-    .vip-menu-btn{background:#202838;color:#e0ecfa;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:14px;transition:all 0.2s ease;box-shadow:0 0 10px rgba(140,190,255,0.35)}
+    .vip-menu{
+      width:100%;
+      margin-top:6px;
+    }
+    .vip-dropdown{
+      display:none;
+      width:100%;
+      background:#10121a;
+      border-radius:16px;
+      padding:12px;
+      margin-top:8px;
+      box-shadow:0 0 15px rgba(100,150,220,0.3)
+    }
+    .vip-menu-btn{
+      width:100%;
+      background:#202838;
+      color:#e0ecfa;
+      border:none;
+      padding:14px;
+      border-radius:16px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:500;
+      transition:all 0.2s ease;
+      box-shadow:0 0 10px rgba(140,190,255,0.35)
+    }
     .vip-menu-btn:active{transform:scale(0.96)}
     .vip-menu.show .vip-dropdown{display:block}
 
@@ -211,14 +243,8 @@
     <div class="logo-text">Blind Touch</div>
   </div>
 
-  <div class="vip-menu" id="vipMenu">
-    <button class="vip-menu-btn" id="vipBtn">💎 充值会员</button>
-    <div class="vip-dropdown">
-      <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
-      <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
-      <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
-    </div>
-  </div>
+  <!-- 副标题：在黑暗中相遇 -->
+  <div class="subtitle">在黑暗中相遇</div>
 
   <div class="video-container" id="homeVideo">
     <video class="main-video" autoplay loop muted playsinline>
@@ -229,6 +255,16 @@
   <div class="status" id="left">免费次数：3</div>
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
+
+  <!-- 充值会员按钮 已下移 + 无钻石 -->
+  <div class="vip-menu" id="vipMenu">
+    <button class="vip-menu-btn" id="vipBtn">充值会员</button>
+    <div class="vip-dropdown">
+      <div class="vip-item" data-price="5"><div class="vip-name">1天会员</div><div class="vip-price">¥5</div></div>
+      <div class="vip-item" data-price="15"><div class="vip-name">7天会员</div><div class="vip-price">¥15</div></div>
+      <div class="vip-item" data-price="30"><div class="vip-name">30天会员</div><div class="vip-price">¥30</div></div>
+    </div>
+  </div>
 
   <div class="chat-box hide" id="chat"></div>
   <div class="input-row hide" id="chatInputRow">
@@ -350,6 +386,7 @@
     homeVideo.classList.add('hide');
     matchBtn.classList.add('hide');
     saveContactBtn.classList.add('hide');
+    vipMenu.classList.add('hide');
     chat.classList.remove('hide');
     chatInputRow.classList.remove('hide');
     leaveBtn.classList.remove('hide');
@@ -367,6 +404,7 @@
     homeVideo.classList.remove('hide');
     matchBtn.classList.remove('hide');
     saveContactBtn.classList.remove('hide');
+    vipMenu.classList.remove('hide');
     chat.classList.add('hide');
     chatInputRow.classList.add('hide');
     leaveBtn.classList.add('hide');
@@ -398,7 +436,7 @@
       let d=await res.json(); let f=document.createElement('form'); f.method='POST'; f.action=d.formUrl; f.target='_blank';
       for(let k in d.formData){ let i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=d.formData[k]; f.appendChild(i); }
       document.body.appendChild(f); f.submit(); setTimeout(()=>f.remove(),500); vipMenu.classList.remove('show');
-    };
+    }
   });
 </script>
 </body>
