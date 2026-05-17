@@ -29,11 +29,14 @@
       animation: logoFlyIn 1.1s 0.2s ease forwards;
     }
 
+    /* LOGO微调 弱化硬边 统一色调 */
     .page-logo{
       width:36px;
       height:36px;
       object-fit:contain;
-      filter:drop-shadow(0 0 12px #40b8ff);
+      filter:drop-shadow(0 0 14px #40b8ff) brightness(1.05);
+      border-radius:8px;
+      background:transparent;
     }
 
     .logo-text{
@@ -48,20 +51,30 @@
       to {opacity:1;transform:translateX(0);}
     }
 
-    /* 视频容器：居中 + 超大尺寸 */
+    /* 视频外层容器 虚化融合核心 */
     .video-container {
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 20px 0 30px;
+      padding:12px;
+      background-color: #08080a;
+      border-radius:24px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 0 25px rgba(0,0,0,0.6), inset 0 0 15px rgba(64,184,255,0.08);
     }
 
+    /* 视频本体 消除硬边框 边缘柔化 */
     .main-video {
       width: 85%;
       max-width: 320px;
-      border-radius: 20px;
+      border-radius:20px;
       object-fit: cover;
+      /* 边缘模糊过渡 */
+      box-shadow: 0 0 18px rgba(0,0,0,0.7), 0 0 8px rgba(64,184,255,0.15);
+      opacity:0.96;
     }
 
     .btn{
@@ -222,7 +235,7 @@
     </div>
   </div>
 
-  <!-- 主界面视频（自动播放、循环、静音、居中超大） -->
+  <!-- 主界面视频 已做虚化融合处理 -->
   <div class="video-container" id="homeVideo">
     <video class="main-video" autoplay loop muted playsinline>
       <source src="loading.mp4" type="video/mp4">
