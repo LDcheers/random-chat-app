@@ -44,7 +44,6 @@
       white-space:nowrap;
     }
 
-    /* 副标题：在黑暗中相遇 */
     .subtitle {
       text-align:center;
       font-size:13px;
@@ -58,12 +57,14 @@
       to {opacity:1;transform:translateX(0);}
     }
 
+    /* 视频深度融入背景样式 */
     .video-container {
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 20px 0 30px;
+      background: #08080a;
     }
 
     .main-video {
@@ -71,6 +72,9 @@
       max-width: 320px;
       border-radius: 20px;
       object-fit: cover;
+      opacity: 0.94;
+      box-shadow: 0 0 25px #08080a, 0 0 50px rgba(8,8,10,0.85);
+      filter: saturate(0.98);
     }
 
     .btn{
@@ -242,8 +246,6 @@
     <img class="page-logo" src="logo.png" alt="BlindTouch LOGO">
     <div class="logo-text">Blind Touch</div>
   </div>
-
-  <!-- 副标题：在黑暗中相遇 -->
   <div class="subtitle">在黑暗中相遇</div>
 
   <div class="video-container" id="homeVideo">
@@ -256,7 +258,6 @@
   <button class="btn" id="matchBtn">开始匹配</button>
   <button class="btn" id="saveContactBtn">预存联系方式</button>
 
-  <!-- 充值会员按钮 已下移 + 无钻石 -->
   <div class="vip-menu" id="vipMenu">
     <button class="vip-menu-btn" id="vipBtn">充值会员</button>
     <div class="vip-dropdown">
